@@ -16,8 +16,8 @@ interface DashboardProps {
 
 export function Dashboard({ items, achievements, userAchievements }: DashboardProps) {
   const totalItems = items.length
-  const completedItems = items.filter(i => i.status === 'terminado').length
-  const watchingItems = items.filter(i => i.is_watching).length
+  const completedItems = items.filter(i => i.user_progress === 'completado').length
+  const watchingItems = items.filter(i => i.user_progress === 'viendo').length
   const avgScore = items.filter(i => i.score).reduce((acc, i) => acc + (i.score || 0), 0) / 
     (items.filter(i => i.score).length || 1)
   
@@ -37,7 +37,7 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
     type: type as keyof typeof TYPE_LABELS,
     label: TYPE_LABELS[type as keyof typeof TYPE_LABELS],
     count: items.filter(i => i.type === type).length,
-    completed: items.filter(i => i.type === type && i.status === 'terminado').length
+    completed: items.filter(i => i.type === type && i.user_progress === 'completado').length
   }))
 
   return (

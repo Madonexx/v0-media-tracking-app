@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MediaItem, MediaType, MediaStatus, TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
+import { MediaItem, MediaType, UserProgress, TYPE_LABELS, USER_PROGRESS_LABELS } from '@/lib/types'
 import { MediaCard } from './media-card'
 import { AddMediaDialog } from './add-media-dialog'
 import { MediaSearch } from './media-search'
@@ -36,7 +36,7 @@ interface MediaListProps {
 
 export function MediaList({ items, type, onRefresh }: MediaListProps) {
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<MediaStatus | 'all'>('all')
+  const [progressFilter, setProgressFilter] = useState<UserProgress | 'all'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [editItem, setEditItem] = useState<MediaItem | null>(null)
@@ -45,8 +45,20 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
 
   const filteredItems = items.filter((item) => {
     const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter
-    return matchesSearch && matchesStatus
+    const matchesProgress = progressFilter === 'all' || item.user_progress === progressFilter
+    return matchesSearch && matchesProgress
+  })
+
+  // Sort items: viendo first, then en_pausa, completado, pendiente, abandonado last
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const order: Record<UserProgress, number> = {
+      viendo: 0,
+      en_pausa: 1,
+      completado: 2,
+      pendiente: 3,
+      abandonado: 4
+    }
+    return order[a.user_progress] - order[b.user_progress]
   })
 
   const handleEdit = (item: MediaItem) => {
@@ -79,6 +91,12 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
 
   const hasApiSearch = supportsApiSearch(type)
 
+  // Count items by progress
+  const progressCounts = items.reduce((acc, item) => {
+    acc[item.user_progress] = (acc[item.user_progress] || 0) + 1
+    return acc
+  }, {} as Record<UserProgress, number>)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -104,6 +122,33 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
           </Button>
         </div>
       </div>
+
+      {/* Quick filter chips by progress */}
+      <div className="flex flex-wrap gap-2">
+        <Button 
+          variant={progressFilter === 'all' ? 'default' : 'outline'} 
+          size="sm"
+          onClick={() => setProgressFilter('all')}
+          className={progressFilter === 'all' ? 'glow-primary' : ''}
+        >
+          Todos ({items.length})
+        </Button>
+        {(Object.entries(USER_PROGRESS_LABELS) as [UserProgress, string][]).map(([value, label]) => {
+          const count = progressCounts[value] || 0
+          if (count === 0) return null
+          return (
+            <Button 
+              key={value}
+              variant={progressFilter === value ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setProgressFilter(value)}
+              className={progressFilter === value ? 'glow-primary' : ''}
+            >
+              {label} ({count})
+            </Button>
+          )
+        })}
+      </div>
       
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -116,21 +161,21 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
           />
         </div>
         
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as MediaStatus | 'all')}>
-          <SelectTrigger className="w-full sm:w-[180px] border-border">
+        <Select value={progressFilter} onValueChange={(v) => setProgressFilter(v as UserProgress | 'all')}>
+          <SelectTrigger className="w-full sm:w-[200px] border-border">
             <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Estado" />
+            <SelectValue placeholder="Mi progreso" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+            {Object.entries(USER_PROGRESS_LABELS).map(([value, label]) => (
               <SelectItem key={value} value={value}>{label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       
-      {filteredItems.length === 0 ? (
+      {sortedItems.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p>No hay {TYPE_LABELS[type].toLowerCase()} que mostrar</p>
           <div className="flex justify-center gap-2 mt-4">
@@ -152,7 +197,7 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => (
+          {sortedItems.map((item) => (
             <MediaCard
               key={item.id}
               item={item}
@@ -184,7 +229,7 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar {deleteItem?.title}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta accion no se puede deshacer. Se eliminara permanentemente de tu biblioteca.
+              Esta acción no se puede deshacer. Se eliminará permanentemente de tu biblioteca.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

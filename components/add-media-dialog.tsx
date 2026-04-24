@@ -21,7 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MediaItem, MediaType, MediaStatus, TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
+import { 
+  MediaItem, 
+  MediaType, 
+  ContentStatus, 
+  UserProgress,
+  TYPE_LABELS, 
+  CONTENT_STATUS_LABELS,
+  USER_PROGRESS_LABELS 
+} from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -43,7 +51,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
     title: source?.title || '',
     type: source?.type || defaultType,
     score: source?.score || null,
-    status: source?.status || 'no_empezado',
+    content_status: source?.content_status || 'no_empezado',
+    user_progress: source?.user_progress || 'pendiente',
     is_watching: source?.is_watching || false,
     is_up_to_date: source?.is_up_to_date || false,
     dropped_at: source?.dropped_at || '',
@@ -60,7 +69,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         title: newSource.title || '',
         type: newSource.type || defaultType,
         score: newSource.score || null,
-        status: newSource.status || 'no_empezado',
+        content_status: newSource.content_status || 'no_empezado',
+        user_progress: newSource.user_progress || 'pendiente',
         is_watching: newSource.is_watching || false,
         is_up_to_date: newSource.is_up_to_date || false,
         dropped_at: newSource.dropped_at || '',
@@ -70,6 +80,15 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       })
     }
   }, [editItem, prefillData, defaultType])
+
+  // Auto-set is_watching based on user_progress
+  useEffect(() => {
+    if (formData.user_progress === 'viendo') {
+      setFormData(prev => ({ ...prev, is_watching: true }))
+    } else if (formData.user_progress === 'completado' || formData.user_progress === 'abandonado') {
+      setFormData(prev => ({ ...prev, is_watching: false }))
+    }
+  }, [formData.user_progress])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,7 +126,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       title: '',
       type: defaultType,
       score: null,
-      status: 'no_empezado',
+      content_status: 'no_empezado',
+      user_progress: 'pendiente',
       is_watching: false,
       is_up_to_date: false,
       dropped_at: '',
@@ -119,7 +139,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-2 border-primary/30">
+      <DialogContent className="sm:max-w-[500px] bg-card border-2 border-primary/30 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {editItem ? 'Editar' : prefillData ? 'Completar datos de' : 'Agregar'} {TYPE_LABELS[formData.type as MediaType]}
@@ -155,7 +175,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="title">Titulo</Label>
+            <Label htmlFor="title">Título</Label>
             <Input
               id="title"
               value={formData.title}
@@ -185,26 +205,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="status">Estado</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as MediaStatus })}
-              >
-                <SelectTrigger className="border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="score">Puntuacion (1-10)</Label>
+              <Label htmlFor="score">Puntuación (1-10)</Label>
               <Input
                 id="score"
                 type="number"
@@ -216,9 +217,54 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
                 className="border-border focus:border-primary"
               />
             </div>
+          </div>
+
+          {/* Separated status fields with clear labels */}
+          <div className="p-3 rounded-lg bg-muted/30 border border-border space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="content_status" className="flex items-center gap-2">
+                <span className="text-cyan-400">Estado del contenido</span>
+                <span className="text-xs text-muted-foreground">(¿Terminó de emitirse?)</span>
+              </Label>
+              <Select
+                value={formData.content_status}
+                onValueChange={(value) => setFormData({ ...formData, content_status: value as ContentStatus })}
+              >
+                <SelectTrigger className="border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CONTENT_STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             
             <div className="space-y-2">
-              <Label htmlFor="last_episode">Ultimo capitulo/pagina</Label>
+              <Label htmlFor="user_progress" className="flex items-center gap-2">
+                <span className="text-primary">Mi progreso</span>
+                <span className="text-xs text-muted-foreground">(¿Lo terminaste de ver?)</span>
+              </Label>
+              <Select
+                value={formData.user_progress}
+                onValueChange={(value) => setFormData({ ...formData, user_progress: value as UserProgress })}
+              >
+                <SelectTrigger className="border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(USER_PROGRESS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="last_episode">Último capítulo/página</Label>
               <Input
                 id="last_episode"
                 value={formData.last_episode || ''}
@@ -227,36 +273,29 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
                 className="border-border focus:border-primary"
               />
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="dropped_at">Dejado en (si aplica)</Label>
-            <Input
-              id="dropped_at"
-              value={formData.dropped_at || ''}
-              onChange={(e) => setFormData({ ...formData, dropped_at: e.target.value })}
-              placeholder="Ej: E5"
-              className="border-border focus:border-primary"
-            />
+            
+            <div className="space-y-2">
+              <Label htmlFor="dropped_at">
+                {formData.user_progress === 'abandonado' ? 'Lo dejé en' : 'Pausado en (opcional)'}
+              </Label>
+              <Input
+                id="dropped_at"
+                value={formData.dropped_at || ''}
+                onChange={(e) => setFormData({ ...formData, dropped_at: e.target.value })}
+                placeholder="Ej: E5"
+                className="border-border focus:border-primary"
+              />
+            </div>
           </div>
           
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="is_watching"
-                checked={formData.is_watching}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_watching: checked })}
-              />
-              <Label htmlFor="is_watching" className="text-sm">Lo sigo viendo</Label>
-            </div>
-            
             <div className="flex items-center gap-2">
               <Switch
                 id="is_up_to_date"
                 checked={formData.is_up_to_date}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_up_to_date: checked })}
               />
-              <Label htmlFor="is_up_to_date" className="text-sm">Estoy al dia</Label>
+              <Label htmlFor="is_up_to_date" className="text-sm">Estoy al día</Label>
             </div>
           </div>
           

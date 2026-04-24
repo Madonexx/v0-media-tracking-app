@@ -51,7 +51,7 @@ export default function Home() {
         case 'count_completed':
           const typeFilter = condition.type as string | undefined
           const completedCount = currentItems.filter(i => 
-            i.status === 'terminado' && 
+            i.user_progress === 'completado' && 
             (!typeFilter || i.type === typeFilter)
           ).length
           shouldUnlock = completedCount >= (condition.min as number)

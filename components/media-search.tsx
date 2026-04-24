@@ -75,17 +75,25 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
     if (result.author) noteParts.push(result.author)
     if (result.synopsis) noteParts.push(result.synopsis.slice(0, 200) + (result.synopsis.length > 200 ? '...' : ''))
     
+    // Map API status to our content_status
+    // API returns: airing, finished, upcoming, unknown
+    let contentStatus: 'terminado' | 'saliendo' | 'en_espera' | 'no_empezado' = 'no_empezado'
+    if (result.status === 'finished') contentStatus = 'terminado'
+    else if (result.status === 'airing') contentStatus = 'saliendo'
+    else if (result.status === 'upcoming') contentStatus = 'en_espera'
+    
     // Pass to parent to open edit dialog with pre-filled data
     onSelectItem({
       title: result.title,
       type: selectedType,
       score: result.score || null,
-      status: 'no_empezado',
+      content_status: contentStatus,
+      user_progress: 'pendiente',
       is_watching: false,
       is_up_to_date: false,
       image_url: result.image_url || '',
       notes: noteParts.join('\n\n') || '',
-      last_episode: result.episodes ? `${result.episodes} eps totales` : result.chapters ? `${result.chapters} paginas` : ''
+      last_episode: result.episodes ? `${result.episodes} eps totales` : result.chapters ? `${result.chapters} páginas` : ''
     })
     
     // Close search dialog

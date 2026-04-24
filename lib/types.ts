@@ -1,13 +1,18 @@
 export type MediaType = 'anime' | 'series' | 'movie' | 'book' | 'game'
 
-export type MediaStatus = 'terminado' | 'saliendo' | 'en_espera' | 'cancelado' | 'no_empezado'
+// Estado del contenido (si el anime/serie terminó de emitirse, está en emisión, etc.)
+export type ContentStatus = 'terminado' | 'saliendo' | 'en_espera' | 'cancelado' | 'no_empezado'
+
+// Progreso del usuario (si vos lo terminaste de ver, lo estás viendo, etc.)
+export type UserProgress = 'completado' | 'viendo' | 'en_pausa' | 'abandonado' | 'pendiente'
 
 export interface MediaItem {
   id: string
   title: string
   type: MediaType
   score: number | null
-  status: MediaStatus
+  content_status: ContentStatus
+  user_progress: UserProgress
   is_watching: boolean
   is_up_to_date: boolean
   dropped_at: string | null
@@ -36,44 +41,64 @@ export interface UserAchievement {
   achievement?: Achievement
 }
 
-export const STATUS_LABELS: Record<MediaStatus, string> = {
-  terminado: 'Terminado',
-  saliendo: 'En emision',
-  en_espera: 'En espera',
+// Labels for content status (estado del contenido)
+export const CONTENT_STATUS_LABELS: Record<ContentStatus, string> = {
+  terminado: 'Finalizado',
+  saliendo: 'En emisión',
+  en_espera: 'Por estrenar',
   cancelado: 'Cancelado',
-  no_empezado: 'No empezado'
+  no_empezado: 'Desconocido'
+}
+
+// Labels for user progress (mi progreso)
+export const USER_PROGRESS_LABELS: Record<UserProgress, string> = {
+  completado: 'Completado',
+  viendo: 'Viendo',
+  en_pausa: 'En pausa',
+  abandonado: 'Abandonado',
+  pendiente: 'Pendiente'
 }
 
 export const TYPE_LABELS: Record<MediaType, string> = {
   anime: 'Anime',
   series: 'Series',
-  movie: 'Peliculas',
+  movie: 'Películas',
   book: 'Libros',
   game: 'Juegos'
 }
 
-export const STATUS_COLORS: Record<MediaStatus, string> = {
-  terminado: 'bg-success text-success-foreground',
-  saliendo: 'bg-primary text-primary-foreground',
-  en_espera: 'bg-warning text-warning-foreground',
-  cancelado: 'bg-destructive text-destructive-foreground',
-  no_empezado: 'bg-muted text-muted-foreground'
+// Colors for content status badges
+export const CONTENT_STATUS_COLORS: Record<ContentStatus, string> = {
+  terminado: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  saliendo: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  en_espera: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  cancelado: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  no_empezado: 'bg-muted text-muted-foreground border-muted'
 }
 
-// Border colors for card left accent
-export const STATUS_BORDER_COLORS: Record<MediaStatus, string> = {
-  terminado: 'border-l-success',
-  saliendo: 'border-l-primary',
-  en_espera: 'border-l-warning',
-  cancelado: 'border-l-destructive',
-  no_empezado: 'border-l-muted-foreground/30'
+// Colors for user progress (more prominent)
+export const USER_PROGRESS_COLORS: Record<UserProgress, string> = {
+  completado: 'bg-success text-success-foreground',
+  viendo: 'bg-primary text-primary-foreground',
+  en_pausa: 'bg-warning text-warning-foreground',
+  abandonado: 'bg-destructive text-destructive-foreground',
+  pendiente: 'bg-muted text-muted-foreground'
 }
 
-// Glow effects for status
-export const STATUS_GLOW: Record<MediaStatus, string> = {
-  terminado: 'shadow-[0_0_10px_rgba(34,197,94,0.3)]',
-  saliendo: 'shadow-[0_0_10px_rgba(139,92,246,0.3)]',
-  en_espera: 'shadow-[0_0_10px_rgba(234,179,8,0.2)]',
-  cancelado: '',
-  no_empezado: ''
+// Border colors for card left accent (based on user progress)
+export const PROGRESS_BORDER_COLORS: Record<UserProgress, string> = {
+  completado: 'border-l-success',
+  viendo: 'border-l-primary',
+  en_pausa: 'border-l-warning',
+  abandonado: 'border-l-destructive',
+  pendiente: 'border-l-muted-foreground/30'
+}
+
+// Glow effects for user progress
+export const PROGRESS_GLOW: Record<UserProgress, string> = {
+  completado: 'shadow-[0_0_10px_rgba(34,197,94,0.3)]',
+  viendo: 'shadow-[0_0_10px_rgba(139,92,246,0.3)]',
+  en_pausa: 'shadow-[0_0_10px_rgba(234,179,8,0.2)]',
+  abandonado: '',
+  pendiente: ''
 }
