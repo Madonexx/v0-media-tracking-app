@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { MediaItem, MediaType, MediaStatus, TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
 import { MediaCard } from './media-card'
 import { AddMediaDialog } from './add-media-dialog'
+import { MediaSearch } from './media-search'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus, Search, Filter, Sparkles } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { createClient } from '@/lib/supabase/client'
+import { supportsApiSearch } from '@/lib/media-apis'
 
 interface MediaListProps {
   items: MediaItem[]
@@ -36,6 +38,7 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<MediaStatus | 'all'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [editItem, setEditItem] = useState<MediaItem | null>(null)
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
 
@@ -65,6 +68,8 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
     if (!open) setEditItem(null)
   }
 
+  const hasApiSearch = supportsApiSearch(type)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -73,17 +78,29 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
           <p className="text-muted-foreground">{items.length} items en tu biblioteca</p>
         </div>
         
-        <Button onClick={() => setDialogOpen(true)} className="glow-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Agregar {TYPE_LABELS[type]}
-        </Button>
+        <div className="flex gap-2">
+          {hasApiSearch && (
+            <Button onClick={() => setSearchOpen(true)} className="glow-primary">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Buscar con API
+            </Button>
+          )}
+          <Button 
+            onClick={() => setDialogOpen(true)} 
+            variant={hasApiSearch ? 'outline' : 'default'}
+            className={!hasApiSearch ? 'glow-primary' : ''}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {hasApiSearch ? 'Manual' : `Agregar ${TYPE_LABELS[type]}`}
+          </Button>
+        </div>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar..."
+            placeholder="Buscar en tu biblioteca..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 border-border"
@@ -107,14 +124,22 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
       {filteredItems.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p>No hay {TYPE_LABELS[type].toLowerCase()} que mostrar</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Agrega tu primer {TYPE_LABELS[type].toLowerCase().slice(0, -1)}
-          </Button>
+          <div className="flex justify-center gap-2 mt-4">
+            {hasApiSearch && (
+              <Button onClick={() => setSearchOpen(true)} className="glow-primary">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Buscar con API
+              </Button>
+            )}
+            <Button 
+              variant={hasApiSearch ? 'outline' : 'default'}
+              onClick={() => setDialogOpen(true)}
+              className={!hasApiSearch ? 'glow-primary' : ''}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Agregar manualmente
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -128,6 +153,13 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
           ))}
         </div>
       )}
+      
+      <MediaSearch
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onSuccess={onRefresh}
+        defaultType={type}
+      />
       
       <AddMediaDialog
         open={dialogOpen}

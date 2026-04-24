@@ -44,7 +44,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, defaul
     is_up_to_date: editItem?.is_up_to_date || false,
     dropped_at: editItem?.dropped_at || '',
     last_episode: editItem?.last_episode || '',
-    notes: editItem?.notes || ''
+    notes: editItem?.notes || '',
+    image_url: editItem?.image_url || ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,6 +60,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, defaul
       dropped_at: formData.dropped_at || null,
       last_episode: formData.last_episode || null,
       notes: formData.notes || null,
+      image_url: formData.image_url || null,
       updated_at: new Date().toISOString()
     }
     
@@ -87,7 +89,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, defaul
       is_up_to_date: false,
       dropped_at: '',
       last_episode: '',
-      notes: ''
+      notes: '',
+      image_url: ''
     })
   }
 
@@ -208,6 +211,17 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, defaul
               />
               <Label htmlFor="is_up_to_date" className="text-sm">Estoy al dia</Label>
             </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="image_url">URL de imagen (opcional)</Label>
+            <Input
+              id="image_url"
+              value={formData.image_url || ''}
+              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              placeholder="https://..."
+              className="border-border focus:border-primary"
+            />
           </div>
           
           <div className="space-y-2">
