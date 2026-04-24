@@ -40,6 +40,7 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [editItem, setEditItem] = useState<MediaItem | null>(null)
+  const [prefillData, setPrefillData] = useState<Partial<MediaItem> | null>(null)
   const [deleteItem, setDeleteItem] = useState<MediaItem | null>(null)
 
   const filteredItems = items.filter((item) => {
@@ -65,7 +66,15 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
 
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open)
-    if (!open) setEditItem(null)
+    if (!open) {
+      setEditItem(null)
+      setPrefillData(null)
+    }
+  }
+
+  const handleSearchSelect = (data: Partial<MediaItem>) => {
+    setPrefillData(data)
+    setDialogOpen(true)
   }
 
   const hasApiSearch = supportsApiSearch(type)
@@ -157,7 +166,7 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
       <MediaSearch
         open={searchOpen}
         onOpenChange={setSearchOpen}
-        onSuccess={onRefresh}
+        onSelectItem={handleSearchSelect}
         defaultType={type}
       />
       
@@ -166,6 +175,7 @@ export function MediaList({ items, type, onRefresh }: MediaListProps) {
         onOpenChange={handleDialogClose}
         onSuccess={onRefresh}
         editItem={editItem}
+        prefillData={prefillData}
         defaultType={type}
       />
       

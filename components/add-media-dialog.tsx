@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,23 +30,46 @@ interface AddMediaDialogProps {
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
   editItem?: MediaItem | null
+  prefillData?: Partial<MediaItem> | null
   defaultType?: MediaType
 }
 
-export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, defaultType = 'anime' }: AddMediaDialogProps) {
+export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefillData, defaultType = 'anime' }: AddMediaDialogProps) {
   const [loading, setLoading] = useState(false)
+  
+  // Get initial values from editItem (editing) or prefillData (from API search) or defaults
+  const source = editItem || prefillData
   const [formData, setFormData] = useState<Partial<MediaItem>>({
-    title: editItem?.title || '',
-    type: editItem?.type || defaultType,
-    score: editItem?.score || null,
-    status: editItem?.status || 'no_empezado',
-    is_watching: editItem?.is_watching || false,
-    is_up_to_date: editItem?.is_up_to_date || false,
-    dropped_at: editItem?.dropped_at || '',
-    last_episode: editItem?.last_episode || '',
-    notes: editItem?.notes || '',
-    image_url: editItem?.image_url || ''
+    title: source?.title || '',
+    type: source?.type || defaultType,
+    score: source?.score || null,
+    status: source?.status || 'no_empezado',
+    is_watching: source?.is_watching || false,
+    is_up_to_date: source?.is_up_to_date || false,
+    dropped_at: source?.dropped_at || '',
+    last_episode: source?.last_episode || '',
+    notes: source?.notes || '',
+    image_url: source?.image_url || ''
   })
+
+  // Update form when editItem or prefillData changes
+  useEffect(() => {
+    const newSource = editItem || prefillData
+    if (newSource) {
+      setFormData({
+        title: newSource.title || '',
+        type: newSource.type || defaultType,
+        score: newSource.score || null,
+        status: newSource.status || 'no_empezado',
+        is_watching: newSource.is_watching || false,
+        is_up_to_date: newSource.is_up_to_date || false,
+        dropped_at: newSource.dropped_at || '',
+        last_episode: newSource.last_episode || '',
+        notes: newSource.notes || '',
+        image_url: newSource.image_url || ''
+      })
+    }
+  }, [editItem, prefillData, defaultType])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -99,14 +122,38 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, defaul
       <DialogContent className="sm:max-w-[500px] bg-card border-2 border-primary/30">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {editItem ? 'Editar' : 'Agregar'} {TYPE_LABELS[formData.type as MediaType]}
+            {editItem ? 'Editar' : prefillData ? 'Completar datos de' : 'Agregar'} {TYPE_LABELS[formData.type as MediaType]}
           </DialogTitle>
           <DialogDescription>
-            {editItem ? 'Modifica los datos de tu contenido' : 'Agrega nuevo contenido a tu biblioteca'}
+            {editItem 
+              ? 'Modifica los datos de tu contenido' 
+              : prefillData 
+                ? 'Completa el estado y progreso de este contenido'
+                : 'Agrega nuevo contenido a tu biblioteca'
+            }
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Image preview when coming from API search */}
+          {formData.image_url && (
+            <div className="flex gap-4 p-3 rounded-lg bg-muted/50 border border-border">
+              <div className="w-16 h-24 flex-shrink-0 rounded overflow-hidden">
+                <img
+                  src={formData.image_url}
+                  alt={formData.title || 'Preview'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{formData.title}</p>
+                {formData.notes && (
+                  <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{formData.notes}</p>
+                )}
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="title">Titulo</Label>
             <Input

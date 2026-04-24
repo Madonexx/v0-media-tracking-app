@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Plus, Loader2, Star, Calendar, Info } from 'lucide-react'
+import { Search, Plus, Star, Calendar, Info, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,21 +21,19 @@ import {
 } from '@/components/ui/tooltip'
 import { searchMedia, supportsApiSearch, getApiSearchMessage, type SearchResult } from '@/lib/media-apis'
 import { MediaType, TYPE_LABELS } from '@/lib/types'
-import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 interface MediaSearchProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess: () => void
+  onSelectItem: (item: Partial<import('@/lib/types').MediaItem>) => void
   defaultType?: MediaType
 }
 
-export function MediaSearch({ open, onOpenChange, onSuccess, defaultType = 'anime' }: MediaSearchProps) {
+export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'anime' }: MediaSearchProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [adding, setAdding] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<MediaType>(defaultType)
 
   // Debounced search
@@ -70,27 +68,28 @@ export function MediaSearch({ open, onOpenChange, onSuccess, defaultType = 'anim
     }
   }, [open, defaultType])
 
-  const handleAddItem = async (result: SearchResult) => {
-    setAdding(result.id)
-    const supabase = createClient()
-
-    await supabase.from('media_items').insert({
+  const handleSelectItem = (result: SearchResult) => {
+    // Build notes from API metadata
+    const noteParts: string[] = []
+    if (result.genres.length > 0) noteParts.push(result.genres.join(', '))
+    if (result.author) noteParts.push(result.author)
+    if (result.synopsis) noteParts.push(result.synopsis.slice(0, 200) + (result.synopsis.length > 200 ? '...' : ''))
+    
+    // Pass to parent to open edit dialog with pre-filled data
+    onSelectItem({
       title: result.title,
       type: selectedType,
-      score: result.score,
-      status: result.status || 'no_empezado',
+      score: result.score || null,
+      status: 'no_empezado',
       is_watching: false,
       is_up_to_date: false,
-      image_url: result.image_url,
-      notes: result.synopsis ? `${result.genres.join(', ')}${result.author ? ` | ${result.author}` : ''}` : null,
-      last_episode: result.episodes ? `${result.episodes} eps` : result.chapters ? `${result.chapters} pags` : null
+      image_url: result.image_url || '',
+      notes: noteParts.join('\n\n') || '',
+      last_episode: result.episodes ? `${result.episodes} eps totales` : result.chapters ? `${result.chapters} paginas` : ''
     })
-
-    setAdding(null)
-    onSuccess()
     
-    // Remove from results to show it was added
-    setResults(prev => prev.filter(r => r.id !== result.id))
+    // Close search dialog
+    onOpenChange(false)
   }
 
   const hasApiSupport = supportsApiSearch(selectedType)
@@ -220,19 +219,14 @@ export function MediaSearch({ open, onOpenChange, onSuccess, defaultType = 'anim
                       )}
                     </div>
 
-                    {/* Add button */}
+                    {/* Select button */}
                     <div className="flex-shrink-0">
                       <Button
                         size="sm"
-                        onClick={() => handleAddItem(result)}
-                        disabled={adding === result.id}
+                        onClick={() => handleSelectItem(result)}
                         className="glow-primary"
                       >
-                        {adding === result.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Plus className="h-4 w-4" />
-                        )}
+                        <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
