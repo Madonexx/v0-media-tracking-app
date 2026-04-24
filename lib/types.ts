@@ -59,3 +59,21 @@ export const STATUS_COLORS: Record<MediaStatus, string> = {
   cancelado: 'bg-destructive text-destructive-foreground',
   no_empezado: 'bg-muted text-muted-foreground'
 }
+
+// Border colors for card left accent
+export const STATUS_BORDER_COLORS: Record<MediaStatus, string> = {
+  terminado: 'border-l-success',
+  saliendo: 'border-l-primary',
+  en_espera: 'border-l-warning',
+  cancelado: 'border-l-destructive',
+  no_empezado: 'border-l-muted-foreground/30'
+}
+
+// Glow effects for status
+export const STATUS_GLOW: Record<MediaStatus, string> = {
+  terminado: 'shadow-[0_0_10px_rgba(34,197,94,0.3)]',
+  saliendo: 'shadow-[0_0_10px_rgba(139,92,246,0.3)]',
+  en_espera: 'shadow-[0_0_10px_rgba(234,179,8,0.2)]',
+  cancelado: '',
+  no_empezado: ''
+}

@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MediaItem, STATUS_LABELS, STATUS_COLORS, TYPE_LABELS } from '@/lib/types'
+import { MediaItem, STATUS_LABELS, STATUS_COLORS, STATUS_BORDER_COLORS, STATUS_GLOW, TYPE_LABELS } from '@/lib/types'
 import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon } from 'lucide-react'
 import {
   DropdownMenu,
@@ -71,10 +71,50 @@ export function MediaCard({ item, onEdit, onDelete, compact = false }: MediaCard
     )
   }
 
+  // Determine viewing state for visual distinction
+  const isCurrentlyWatching = item.is_watching && (item.status === 'saliendo' || item.status === 'en_espera')
+  const isAbandoned = item.status === 'cancelado' || (item.dropped_at && item.status !== 'terminado')
+  const isCompleted = item.status === 'terminado'
+
   return (
-    <Card className="group border-2 border-border hover:border-primary/50 transition-all hover:glow-primary overflow-hidden">
+    <Card className={cn(
+      "group border-2 border-border hover:border-primary/50 transition-all overflow-hidden border-l-4",
+      STATUS_BORDER_COLORS[item.status],
+      STATUS_GLOW[item.status],
+      isAbandoned && "opacity-60 hover:opacity-100",
+      isCurrentlyWatching && "ring-1 ring-primary/30"
+    )}>
       <CardContent className="p-0">
-        <div className="flex">
+        <div className="flex relative">
+          {/* Currently watching indicator */}
+          {isCurrentlyWatching && (
+            <div className="absolute top-0 right-0 z-10">
+              <div className="bg-primary text-primary-foreground text-[9px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1">
+                <Play className="w-2.5 h-2.5 fill-current" />
+                VIENDO
+              </div>
+            </div>
+          )}
+          
+          {/* Completed badge */}
+          {isCompleted && (
+            <div className="absolute top-0 right-0 z-10">
+              <div className="bg-success text-success-foreground text-[9px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1">
+                <CheckCircle className="w-2.5 h-2.5" />
+                TERMINADO
+              </div>
+            </div>
+          )}
+          
+          {/* Abandoned badge */}
+          {isAbandoned && (
+            <div className="absolute top-0 right-0 z-10">
+              <div className="bg-destructive text-destructive-foreground text-[9px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1">
+                <X className="w-2.5 h-2.5" />
+                ABANDONADO
+              </div>
+            </div>
+          )}
           {/* Image section */}
           <div className="w-24 h-36 flex-shrink-0 bg-muted relative overflow-hidden">
             {item.image_url ? (
