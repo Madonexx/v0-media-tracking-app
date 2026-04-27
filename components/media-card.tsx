@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { 
   MediaItem, 
   CONTENT_STATUS_LABELS, 
@@ -13,7 +15,7 @@ import {
   PROGRESS_GLOW, 
   TYPE_LABELS 
 } from '@/lib/types'
-import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen } from 'lucide-react'
+import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen, Plus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { StarRating } from './star-rating'
 
 interface MediaCardProps {
   item: MediaItem
@@ -31,12 +35,40 @@ interface MediaCardProps {
 }
 
 export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = false }: MediaCardProps) {
-  const progressIcon = {
-    completado: <CheckCircle className="w-3 h-3" />,
-    viendo: <Play className="w-3 h-3" />,
-    en_pausa: <Pause className="w-3 h-3" />,
-    abandonado: <X className="w-3 h-3" />,
-    pendiente: <Clock className="w-3 h-3" />
+  const [localProgress, setLocalProgress] = useState(item.current_progress || 0)
+  const [updating, setUpdating] = useState(false)
+  const supabase = createClient()
+
+  const handleIncrement = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (updating || readOnly) return
+    
+    setUpdating(true)
+    const nextProgress = localProgress + 1
+    
+    // Optimistic update
+    setLocalProgress(nextProgress)
+
+    const updateData: any = {
+      current_progress: nextProgress,
+      updated_at: new Date().toISOString()
+    }
+
+    // Auto-complete if total is reached
+    if (item.total_progress && nextProgress >= item.total_progress) {
+      updateData.user_progress = 'completado'
+    }
+
+    const { error } = await supabase
+      .from('media_items')
+      .update(updateData)
+      .eq('id', item.id)
+
+    if (error) {
+      console.error('Error updating progress:', error)
+      setLocalProgress(localProgress) // Rollback
+    }
+    setUpdating(false)
   }
 
   const typeIcon = {
@@ -47,11 +79,14 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
     game: '🎮'
   }
 
+  const progressPercent = item.total_progress 
+    ? Math.min(Math.round((localProgress / item.total_progress) * 100), 100)
+    : 0
+
   if (compact) {
     return (
       <Card className="group border border-border hover:border-primary/50 transition-all">
         <CardContent className="p-3 flex items-center gap-3">
-          {/* Small image */}
           <div className="w-10 h-14 rounded overflow-hidden bg-muted flex-shrink-0">
             {item.image_url ? (
               <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
@@ -91,7 +126,7 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
     )}>
       <CardContent className="p-0">
         <div className="flex relative">
-          {/* User progress badge - top right corner */}
+          {/* User progress badge */}
           <div className="absolute top-0 right-0 z-10">
             <div className={cn(
               "text-[9px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1",
@@ -99,15 +134,12 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
             )}>
               {item.user_progress === 'viendo' && <Play className="w-2.5 h-2.5 fill-current" />}
               {item.user_progress === 'completado' && <CheckCircle className="w-2.5 h-2.5" />}
-              {item.user_progress === 'abandonado' && <X className="w-2.5 h-2.5" />}
-              {item.user_progress === 'en_pausa' && <Pause className="w-2.5 h-2.5" />}
-              {item.user_progress === 'pendiente' && <Eye className="w-2.5 h-2.5" />}
               {USER_PROGRESS_LABELS[item.user_progress].toUpperCase()}
             </div>
           </div>
 
           {/* Image section */}
-          <div className="w-24 h-36 flex-shrink-0 bg-muted relative overflow-hidden">
+          <div className="w-24 h-40 flex-shrink-0 bg-muted relative overflow-hidden">
             {item.image_url ? (
               <img 
                 src={item.image_url} 
@@ -120,7 +152,6 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                 <span className="text-[10px]">Sin imagen</span>
               </div>
             )}
-            {/* Type badge overlay */}
             <div className="absolute top-1 left-1">
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-background/80 backdrop-blur-sm">
                 {TYPE_LABELS[item.type]}
@@ -132,7 +163,7 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
           <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
             <div>
               <div className="flex items-start justify-between gap-1">
-                <h3 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                <h3 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
                   {item.title}
                 </h3>
                 
@@ -160,8 +191,7 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                 )}
               </div>
               
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                {/* Content status badge - smaller, secondary */}
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                 <Badge 
                   variant="outline" 
                   className={cn('text-[10px] px-1.5 py-0 flex items-center gap-0.5 border', CONTENT_STATUS_COLORS[item.content_status])}
@@ -171,30 +201,42 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                 </Badge>
                 
                 {item.score && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex items-center gap-0.5 border-warning text-warning">
-                    <Star className="w-2.5 h-2.5 fill-current" />
-                    {item.score}
-                  </Badge>
+                  <div className="flex items-center text-warning drop-shadow-sm">
+                    <Star className="w-3 h-3 fill-current mr-0.5" />
+                    <span className="text-[10px] font-bold">{item.score}</span>
+                  </div>
                 )}
-                
-                {item.is_up_to_date && item.user_progress === 'viendo' && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-success text-success">
-                    Al día
-                  </Badge>
+              </div>
+
+              {/* NEW Progress Tracker UI */}
+              <div className="mt-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    Progreso: <span className="text-foreground font-bold">{localProgress}</span>
+                    {item.total_progress ? ` / ${item.total_progress}` : ''}
+                  </div>
+                  {!readOnly && item.user_progress !== 'completado' && (
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="h-6 w-6 border-primary/30 text-primary hover:bg-primary hover:text-white"
+                      onClick={handleIncrement}
+                      disabled={updating}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                {item.total_progress && (
+                  <Progress value={progressPercent} className="h-1.5 bg-secondary" />
                 )}
               </div>
             </div>
             
-            <div className="mt-2">
-              {item.last_episode && (
-                <p className="text-[11px] text-muted-foreground truncate">
-                  Último: {item.last_episode}
-                </p>
-              )}
-              
-              {item.dropped_at && item.user_progress === 'abandonado' && (
-                <p className="text-[11px] text-destructive truncate">
-                  Dejado en: {item.dropped_at}
+            <div className="mt-1">
+              {item.last_episode && !item.total_progress && (
+                <p className="text-[10px] text-muted-foreground truncate italic">
+                  {item.last_episode}
                 </p>
               )}
               

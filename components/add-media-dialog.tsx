@@ -32,6 +32,7 @@ import {
 } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
+import { StarRating } from './star-rating'
 
 interface AddMediaDialogProps {
   open: boolean
@@ -57,6 +58,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
     is_up_to_date: source?.is_up_to_date || false,
     dropped_at: source?.dropped_at || '',
     last_episode: source?.last_episode || '',
+    current_progress: source?.current_progress || 0,
+    total_progress: source?.total_progress || null,
     notes: source?.notes || '',
     image_url: source?.image_url || ''
   })
@@ -75,11 +78,13 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         is_up_to_date: newSource.is_up_to_date || false,
         dropped_at: newSource.dropped_at || '',
         last_episode: newSource.last_episode || '',
+        current_progress: newSource.current_progress || 0,
+        total_progress: newSource.total_progress || null,
         notes: newSource.notes || '',
         image_url: newSource.image_url || ''
       })
     }
-  }, [editItem, prefillData, defaultType])
+  }, [editItem, prefillData, defaultType, open])
 
   // Auto-set is_watching based on user_progress
   useEffect(() => {
@@ -111,6 +116,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       score: formData.score || null,
       dropped_at: formData.dropped_at || null,
       last_episode: formData.last_episode || null,
+      current_progress: Number(formData.current_progress) || 0,
+      total_progress: formData.total_progress ? Number(formData.total_progress) : null,
       notes: formData.notes || null,
       image_url: formData.image_url || null,
       updated_at: new Date().toISOString()
@@ -136,6 +143,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       const compatibilityData = { ...dataToSave }
       delete compatibilityData.content_status
       delete compatibilityData.user_progress
+      delete compatibilityData.current_progress
+      delete compatibilityData.total_progress
       
       if (editItem) {
         result = await supabase
@@ -171,6 +180,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       is_up_to_date: false,
       dropped_at: '',
       last_episode: '',
+      current_progress: 0,
+      total_progress: null,
       notes: '',
       image_url: ''
     })
@@ -244,17 +255,41 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="score">Puntuación (1-10)</Label>
-              <Input
-                id="score"
-                type="number"
-                min="1"
-                max="10"
-                value={formData.score || ''}
-                onChange={(e) => setFormData({ ...formData, score: e.target.value ? parseInt(e.target.value) : null })}
-                placeholder="Opcional"
-                className="border-border focus:border-primary"
+              <Label>Puntuación</Label>
+              <StarRating 
+                value={formData.score || null} 
+                onChange={(val) => setFormData({ ...formData, score: val })}
               />
+            </div>
+          </div>
+
+          {/* Progress Section */}
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+            <Label className="text-primary font-bold">Progreso Numérico</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="current_progress" className="text-xs">Visto/Leído</Label>
+                <Input
+                  id="current_progress"
+                  type="number"
+                  min="0"
+                  value={formData.current_progress}
+                  onChange={(e) => setFormData({ ...formData, current_progress: parseInt(e.target.value) || 0 })}
+                  className="h-8 border-border focus:border-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="total_progress" className="text-xs">Total (opcional)</Label>
+                <Input
+                  id="total_progress"
+                  type="number"
+                  min="0"
+                  value={formData.total_progress || ''}
+                  onChange={(e) => setFormData({ ...formData, total_progress: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="?"
+                  className="h-8 border-border focus:border-primary"
+                />
+              </div>
             </div>
           </div>
 
@@ -303,7 +338,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="last_episode">Último capítulo/página</Label>
+              <Label htmlFor="last_episode">Etiqueta de texto (opcional)</Label>
               <Input
                 id="last_episode"
                 value={formData.last_episode || ''}

@@ -27,6 +27,8 @@ export interface MediaItem {
   is_up_to_date: boolean
   dropped_at: string | null
   last_episode: string | null
+  current_progress: number
+  total_progress: number | null
   notes: string | null
   image_url: string | null
   created_at: string
