@@ -29,6 +29,7 @@ export interface MediaItem {
   last_episode: string | null
   current_progress: number
   total_progress: number | null
+  is_platinum?: boolean
   notes: string | null
   image_url: string | null
   created_at: string
@@ -104,6 +105,45 @@ export const PROGRESS_BORDER_COLORS: Record<UserProgress, string> = {
   en_pausa: 'border-l-warning',
   abandonado: 'border-l-destructive',
   pendiente: 'border-l-muted-foreground/30'
+}
+
+// Vocabulary Helpers
+export const getMediaProgressLabel = (progress: UserProgress, type: MediaType): string => {
+  if (progress === 'viendo') {
+    switch (type) {
+      case 'book': return 'Leyendo';
+      case 'game': return 'Jugando';
+      case 'movie': return 'Visto';
+      default: return 'Viendo';
+    }
+  }
+  if (progress === 'completado') {
+    switch (type) {
+      case 'book': return 'Leído';
+      case 'movie': return 'Visto';
+      case 'game': return 'Terminado';
+      default: return 'Completado';
+    }
+  }
+  return USER_PROGRESS_LABELS[progress];
+}
+
+export const getMediaUnitLabel = (type: MediaType): string => {
+  switch (type) {
+    case 'book': return 'págs';
+    case 'game': return 'hs';
+    case 'anime':
+    case 'series': return 'eps';
+    default: return '';
+  }
+}
+
+export const getMediaActionLabel = (type: MediaType): string => {
+  switch (type) {
+    case 'book': return 'Leer';
+    case 'game': return 'Jugar';
+    default: return 'Ver';
+  }
 }
 
 // Glow effects for user progress

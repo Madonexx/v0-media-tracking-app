@@ -28,12 +28,15 @@ import {
   UserProgress,
   TYPE_LABELS, 
   CONTENT_STATUS_LABELS,
-  USER_PROGRESS_LABELS 
+  USER_PROGRESS_LABELS,
+  getMediaProgressLabel,
+  getMediaUnitLabel
 } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
 import { StarRating } from './star-rating'
 import { cn } from '@/lib/utils'
+import { Trophy } from 'lucide-react'
 
 interface AddMediaDialogProps {
   open: boolean
@@ -61,6 +64,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
     last_episode: source?.last_episode || '',
     current_progress: source?.current_progress || 0,
     total_progress: source?.total_progress || null,
+    is_platinum: source?.is_platinum || false,
     notes: source?.notes || '',
     image_url: source?.image_url || ''
   })
@@ -81,6 +85,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         last_episode: newSource.last_episode || '',
         current_progress: newSource.current_progress || 0,
         total_progress: newSource.total_progress || null,
+        is_platinum: newSource.is_platinum || false,
         notes: newSource.notes || '',
         image_url: newSource.image_url || ''
       })
@@ -109,13 +114,6 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       return
     }
 
-    // Special logic for movies: map "Visto" toggle to user_progress
-    let finalProgress = formData.user_progress
-    if (formData.type === 'movie') {
-      // If movie has a score or notes and progress was completado, keep it
-      // This is mostly handled by the UI toggle now
-    }
-
     // Prepare data
     const dataToSave: any = {
       ...formData,
@@ -126,6 +124,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       last_episode: formData.last_episode || null,
       current_progress: Number(formData.current_progress) || 0,
       total_progress: formData.total_progress ? Number(formData.total_progress) : null,
+      is_platinum: !!formData.is_platinum,
       notes: formData.notes || null,
       image_url: formData.image_url || null,
       updated_at: new Date().toISOString()
@@ -152,6 +151,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       delete compatibilityData.user_progress
       delete compatibilityData.current_progress
       delete compatibilityData.total_progress
+      delete compatibilityData.is_platinum
       
       if (editItem) {
         result = await supabase.from('media_items').update(compatibilityData).eq('id', editItem.id)
@@ -184,6 +184,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         last_episode: '',
         current_progress: 0,
         total_progress: null,
+        is_platinum: false,
         notes: '',
         image_url: ''
       })
@@ -191,13 +192,17 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
   }
 
   const isMovie = formData.type === 'movie'
+  const isBook = formData.type === 'book'
+  const isGame = formData.type === 'game'
   const isTypeFixed = !editItem // Hide type selector when adding new (implied by context)
+
+  const unitLabel = getMediaUnitLabel(formData.type as MediaType).toUpperCase() || 'PROGRESO'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-card border-2 border-primary/30 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">
+          <DialogTitle className="text-xl text-primary font-bold">
             {editItem ? 'Editar' : 'Agregar'} {TYPE_LABELS[formData.type as MediaType]}
           </DialogTitle>
           <DialogDescription>
@@ -235,7 +240,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
                     value={formData.type}
                     onValueChange={(value) => setFormData({ ...formData, type: value as MediaType })}
                   >
-                    <SelectTrigger className="border-border">
+                    <SelectTrigger className="border-border h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -287,15 +292,16 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
               // ANIME/SERIES/BOOKS/GAMES VIEW: Full tracking
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Content Status - Hide for books/games if preferred, but keeping it for emission info */}
                   <div className="space-y-2">
                     <Label htmlFor="content_status" className="text-[10px] text-cyan-400 font-bold uppercase">
-                      ¿Terminó de emitirse?
+                      {isBook || isGame ? 'Lanzamiento' : '¿Terminó de emitirse?'}
                     </Label>
                     <Select
                       value={formData.content_status}
                       onValueChange={(value) => setFormData({ ...formData, content_status: value as ContentStatus })}
                     >
-                      <SelectTrigger className="h-8 text-xs border-border">
+                      <SelectTrigger className="h-9 text-xs border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -314,12 +320,14 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
                       value={formData.user_progress}
                       onValueChange={(value) => setFormData({ ...formData, user_progress: value as UserProgress })}
                     >
-                      <SelectTrigger className="h-8 text-xs border-border">
+                      <SelectTrigger className="h-9 text-xs border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.entries(USER_PROGRESS_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value} className="text-xs">{label}</SelectItem>
+                          <SelectItem key={value} value={value} className="text-xs">
+                            {getMediaProgressLabel(value as UserProgress, formData.type as MediaType)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -328,7 +336,9 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
 
                 <div className="grid grid-cols-2 gap-4 bg-background/40 p-3 rounded-lg border border-border/40">
                   <div className="space-y-1.5">
-                    <Label htmlFor="current_progress" className="text-[10px] font-bold">VISTO / LEÍDO</Label>
+                    <Label htmlFor="current_progress" className="text-[10px] font-bold">
+                      {unitLabel}
+                    </Label>
                     <Input
                       id="current_progress"
                       type="number"
@@ -351,11 +361,28 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
                     />
                   </div>
                 </div>
+
+                {isGame && (
+                  <div className="flex items-center justify-between p-2 bg-gradient-to-r from-warning/10 to-transparent rounded-lg border border-warning/20">
+                    <div className="flex items-center gap-2">
+                      <Trophy className={cn("w-4 h-4", formData.is_platinum ? "text-warning" : "text-muted-foreground")} />
+                      <div className="space-y-0.5">
+                        <Label htmlFor="game-platinum" className="text-xs font-bold uppercase tracking-tight">¡PLATINADO!</Label>
+                        <p className="text-[9px] text-muted-foreground">Marca si conseguiste el 100% / Platino</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="game-platinum"
+                      checked={formData.is_platinum}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_platinum: checked })}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Section 3: Visuals & Notes */}
+          {/* Section 3: Visuals & Description */}
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label htmlFor="image_url" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
@@ -384,7 +411,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
             </div>
           </div>
           
-          <DialogFooter className="pt-4">
+          <DialogFooter className="pt-4 gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>

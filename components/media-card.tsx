@@ -13,9 +13,12 @@ import {
   USER_PROGRESS_COLORS,
   PROGRESS_BORDER_COLORS, 
   PROGRESS_GLOW, 
-  TYPE_LABELS 
+  TYPE_LABELS,
+  MediaType,
+  getMediaProgressLabel,
+  getMediaUnitLabel
 } from '@/lib/types'
-import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen, Plus } from 'lucide-react'
+import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen, Plus, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -32,14 +35,16 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
   const [updating, setUpdating] = useState(false)
   const supabase = createClient()
 
+  const isMovie = item.type === 'movie'
+  const isGame = item.type === 'game'
+  const isBook = item.type === 'book'
+
   const handleIncrement = async (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering the card's click (edit)
-    if (updating || readOnly) return
+    e.stopPropagation()
+    if (updating || readOnly || isMovie) return
     
     setUpdating(true)
     const nextProgress = localProgress + 1
-    
-    // Optimistic update
     setLocalProgress(nextProgress)
 
     const updateData: any = {
@@ -58,22 +63,17 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
 
     if (error) {
       console.error('Error updating progress:', error)
-      setLocalProgress(localProgress) // Rollback
+      setLocalProgress(localProgress)
     }
     setUpdating(false)
-  }
-
-  const typeIcon = {
-    anime: '🎬',
-    series: '📺',
-    movie: '🎥',
-    book: '📚',
-    game: '🎮'
   }
 
   const progressPercent = item.total_progress 
     ? Math.min(Math.round((localProgress / item.total_progress) * 100), 100)
     : 0
+
+  const progressLabel = getMediaProgressLabel(item.user_progress, item.type)
+  const unitLabel = getMediaUnitLabel(item.type)
 
   if (compact) {
     return (
@@ -83,8 +83,8 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
             {item.image_url ? (
               <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-lg">
-                {typeIcon[item.type]}
+              <div className="w-full h-full flex items-center justify-center text-lg opacity-40">
+                {item.type === 'game' ? '🎮' : item.type === 'book' ? '📚' : '🎬'}
               </div>
             )}
           </div>
@@ -93,14 +93,9 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
             <p className="text-sm font-medium truncate">{item.title}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className={cn('text-[10px] px-1.5', USER_PROGRESS_COLORS[item.user_progress])}>
-                {USER_PROGRESS_LABELS[item.user_progress]}
+                {progressLabel}
               </Badge>
-              {item.score && (
-                <span className="text-xs text-warning flex items-center gap-0.5">
-                  <Star className="w-3 h-3 fill-current" />
-                  {item.score}
-                </span>
-              )}
+              {item.is_platinum && <Trophy className="w-3 h-3 text-warning fill-current" />}
             </div>
           </div>
         </CardContent>
@@ -111,31 +106,38 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
   return (
     <Card 
       className={cn(
-        "group border-2 border-border hover:border-primary/50 transition-all overflow-hidden border-l-4 relative",
+        "group border-2 border-border hover:border-primary/50 transition-all overflow-hidden border-l-4 relative h-40",
         PROGRESS_BORDER_COLORS[item.user_progress],
         PROGRESS_GLOW[item.user_progress],
         !readOnly && "cursor-pointer active:scale-[0.98]",
-        item.user_progress === 'abandonado' && "opacity-60 hover:opacity-100",
+        item.user_progress === 'abandonado' && "opacity-70 hover:opacity-100",
         item.user_progress === 'viendo' && "ring-1 ring-primary/30"
       )}
       onClick={() => !readOnly && onEdit?.(item)}
     >
-      <CardContent className="p-0">
-        <div className="flex relative">
-          {/* User progress badge - MOVED TO LEFT */}
+      <CardContent className="p-0 h-full">
+        <div className="flex h-full relative">
+          {/* Status Tag */}
           <div className="absolute top-0 left-0 z-10">
             <div className={cn(
-              "text-[9px] font-bold px-2 py-0.5 rounded-br-lg flex items-center gap-1",
+              "text-[9px] font-bold px-2 py-0.5 rounded-br-lg flex items-center gap-1 shadow-sm",
               USER_PROGRESS_COLORS[item.user_progress]
             )}>
-              {item.user_progress === 'viendo' && <Play className="w-2.5 h-2.5 fill-current" />}
+              {item.user_progress === 'viendo' && (isBook ? <BookOpen className="w-2.5 h-2.5" /> : isGame ? <Gamepad2 className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 fill-current" />)}
               {item.user_progress === 'completado' && <CheckCircle className="w-2.5 h-2.5" />}
-              {USER_PROGRESS_LABELS[item.user_progress].toUpperCase()}
+              {progressLabel.toUpperCase()}
             </div>
           </div>
 
-          {/* Image section */}
-          <div className="w-24 h-40 flex-shrink-0 bg-muted relative overflow-hidden">
+          {/* Platinum Trophy for games */}
+          {item.is_platinum && (
+            <div className="absolute top-0 right-0 p-1 z-10 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]">
+              <Trophy className="w-4 h-4 text-warning fill-current" />
+            </div>
+          )}
+
+          {/* Image */}
+          <div className="w-24 h-full flex-shrink-0 bg-muted relative overflow-hidden">
             {item.image_url ? (
               <img 
                 src={item.image_url} 
@@ -144,77 +146,74 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1">
-                <ImageIcon className="w-8 h-8 opacity-50" />
-                <span className="text-[10px]">Sin imagen</span>
+                <ImageIcon className="w-7 h-7 opacity-30" />
+                <span className="text-[9px]">Sin imagen</span>
               </div>
             )}
-            {/* Type badge overlay - bottom right of image */}
             <div className="absolute bottom-1 right-1">
-              <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-background/80 backdrop-blur-sm h-4">
-                {TYPE_LABELS[item.type]}
+              <Badge variant="secondary" className="text-[8px] px-1 py-0 bg-background/80 backdrop-blur-sm h-3.5 border-none">
+                {TYPE_LABELS[item.type].toUpperCase()}
               </Badge>
             </div>
           </div>
           
-          {/* Info section */}
+          {/* Info */}
           <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
             <div>
-              <div className="flex items-start justify-between gap-1">
-                <h3 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
-                  {item.title}
-                </h3>
-              </div>
+              <h3 className="font-bold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
+                {item.title}
+              </h3>
               
               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <Badge 
-                  variant="outline" 
-                  className={cn('text-[10px] px-1.5 py-0 flex items-center gap-0.5 border h-4', CONTENT_STATUS_COLORS[item.content_status])}
-                >
-                  {CONTENT_STATUS_LABELS[item.content_status]}
-                </Badge>
+                {!isMovie && (
+                  <Badge 
+                    variant="outline" 
+                    className={cn('text-[9px] px-1.5 py-0 flex items-center gap-0.5 border h-4 leading-none', CONTENT_STATUS_COLORS[item.content_status])}
+                  >
+                    {CONTENT_STATUS_LABELS[item.content_status]}
+                  </Badge>
+                )}
                 
                 {item.score && (
-                  <div className="flex items-center text-warning drop-shadow-sm">
+                  <div className="flex items-center text-warning">
                     <Star className="w-3 h-3 fill-current mr-0.5" />
                     <span className="text-[10px] font-bold">{item.score}</span>
                   </div>
                 )}
               </div>
 
-              {/* Progress Tracker UI */}
-              <div className="mt-4 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="text-[11px] font-medium text-muted-foreground">
-                    Progreso: <span className="text-foreground font-bold">{localProgress}</span>
-                    {item.total_progress ? ` / ${item.total_progress}` : ''}
+              {/* Progress UI (Hidden for Movies) */}
+              {!isMovie && (
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-medium text-muted-foreground">
+                      {isBook ? 'Página: ' : isGame ? 'Horas: ' : 'Progreso: '}
+                      <span className="text-foreground font-bold">{localProgress}</span>
+                      {item.total_progress ? ` / ${item.total_progress}` : ''}
+                      {unitLabel && <span className="ml-0.5 opacity-70">{unitLabel}</span>}
+                    </div>
+                    {!readOnly && item.user_progress !== 'completado' && (
+                      <Button 
+                        size="icon" 
+                        variant="outline" 
+                        className="h-5 w-5 border-primary/30 text-primary hover:bg-primary hover:text-white"
+                        onClick={handleIncrement}
+                        disabled={updating}
+                      >
+                        <Plus className="h-2.5 w-2.5" />
+                      </Button>
+                    )}
                   </div>
-                  {!readOnly && item.user_progress !== 'completado' && (
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      className="h-6 w-6 border-primary/30 text-primary hover:bg-primary hover:text-white"
-                      onClick={handleIncrement}
-                      disabled={updating}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
+                  {item.total_progress && (
+                    <Progress value={progressPercent} className="h-1 bg-secondary" />
                   )}
                 </div>
-                {item.total_progress && (
-                  <Progress value={progressPercent} className="h-1.5 bg-secondary" />
-                )}
-              </div>
+              )}
             </div>
             
             <div className="mt-1">
-              {item.last_episode && !item.total_progress && (
-                <p className="text-[10px] text-muted-foreground truncate italic">
-                  {item.last_episode}
-                </p>
-              )}
-              
               {item.notes && (
-                <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                <p className="text-[10px] text-muted-foreground/80 line-clamp-1 italic">
                   {item.notes}
                 </p>
               )}
@@ -225,3 +224,20 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
     </Card>
   )
 }
+
+// Fixed missing icon from lucide-react imports above
+const Gamepad2 = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10 y2="14"/><circle cx="15" cy="13" r="1"/><circle cx="18" cy="11" r="1"/><rect width="20" height="12" x="2" y="6" rx="2"/>
+  </svg>
+)
