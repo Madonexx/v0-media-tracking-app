@@ -95,9 +95,19 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
     setLoading(true)
     
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
     
-    const dataToSave = {
+    if (!user) {
+      alert('Debes iniciar sesión para realizar esta acción')
+      setLoading(false)
+      return
+    }
+
+    // Prepare data - we include 'status' for compatibility with old schema
+    const dataToSave: any = {
       ...formData,
+      user_id: user.id, // Assign ownership
+      status: formData.content_status, // For old schema
       score: formData.score || null,
       dropped_at: formData.dropped_at || null,
       last_episode: formData.last_episode || null,
@@ -106,15 +116,44 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       updated_at: new Date().toISOString()
     }
     
+    let result;
     if (editItem) {
-      await supabase
+      result = await supabase
         .from('media_items')
         .update(dataToSave)
         .eq('id', editItem.id)
     } else {
-      await supabase
+      result = await supabase
         .from('media_items')
         .insert(dataToSave)
+    }
+    
+    // If it fails, it might be because of column mismatch (new columns don't exist yet)
+    if (result.error) {
+      console.warn('Initial save failed, trying compatibility mode:', result.error.message)
+      
+      // Compatibility mode: remove columns that might not exist in old schema
+      const compatibilityData = { ...dataToSave }
+      delete compatibilityData.content_status
+      delete compatibilityData.user_progress
+      
+      if (editItem) {
+        result = await supabase
+          .from('media_items')
+          .update(compatibilityData)
+          .eq('id', editItem.id)
+      } else {
+        result = await supabase
+          .from('media_items')
+          .insert(compatibilityData)
+      }
+      
+      if (result.error) {
+        console.error('Final save attempt failed:', result.error)
+        alert(`Error al guardar: ${result.error.message}`)
+        setLoading(false)
+        return
+      }
     }
     
     setLoading(false)

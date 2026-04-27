@@ -2,25 +2,52 @@
 
 import { cn } from '@/lib/utils'
 import { MediaType, TYPE_LABELS } from '@/lib/types'
-import { Home, Tv, Film, BookOpen, Gamepad2, Clapperboard, Trophy } from 'lucide-react'
+import { Home, Tv, Film, BookOpen, Gamepad2, Clapperboard, Trophy, Settings, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface NavigationProps {
   activeTab: 'dashboard' | 'achievements' | MediaType
   onTabChange: (tab: 'dashboard' | 'achievements' | MediaType) => void
+  enabledCategories?: MediaType[]
+  onOpenSettings?: () => void
 }
 
-const navItems = [
-  { id: 'dashboard' as const, label: 'Dashboard', icon: Home },
-  { id: 'anime' as const, label: TYPE_LABELS.anime, icon: Tv },
-  { id: 'series' as const, label: TYPE_LABELS.series, icon: Clapperboard },
-  { id: 'movie' as const, label: TYPE_LABELS.movie, icon: Film },
-  { id: 'book' as const, label: TYPE_LABELS.book, icon: BookOpen },
-  { id: 'game' as const, label: TYPE_LABELS.game, icon: Gamepad2 },
-  { id: 'achievements' as const, label: 'Logros', icon: Trophy },
-]
+export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSettings }: NavigationProps) {
+  const router = useRouter()
+  const supabase = createClient()
 
-export function Navigation({ activeTab, onTabChange }: NavigationProps) {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
+  const allNavItems = [
+    { id: 'dashboard' as const, label: 'Dashboard', icon: Home, type: 'core' },
+    { id: 'anime' as const, label: TYPE_LABELS.anime, icon: Tv, type: 'media' },
+    { id: 'series' as const, label: TYPE_LABELS.series, icon: Clapperboard, type: 'media' },
+    { id: 'movie' as const, label: TYPE_LABELS.movie, icon: Film, type: 'media' },
+    { id: 'book' as const, label: TYPE_LABELS.book, icon: BookOpen, type: 'media' },
+    { id: 'game' as const, label: TYPE_LABELS.game, icon: Gamepad2, type: 'media' },
+    { id: 'achievements' as const, label: 'Logros', icon: Trophy, type: 'core' },
+  ]
+
+  const navItems = allNavItems.filter(item => {
+    if (item.type === 'core') return true
+    if (!enabledCategories) return true
+    return enabledCategories.includes(item.id as MediaType)
+  })
+
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -34,7 +61,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
             </span>
           </div>
           
-          <div className="flex items-center gap-1 overflow-x-auto pb-px">
+          <div className="flex items-center gap-1 overflow-x-auto pb-px flex-1">
             {navItems.map((item) => (
               <Button
                 key={item.id}
@@ -52,6 +79,29 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                 <span className="hidden md:inline">{item.label}</span>
               </Button>
             ))}
+          </div>
+
+          <div className="ml-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onOpenSettings}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Ajustes</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Cerrar Sesión</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

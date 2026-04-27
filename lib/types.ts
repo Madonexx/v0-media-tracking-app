@@ -6,6 +6,16 @@ export type ContentStatus = 'terminado' | 'saliendo' | 'en_espera' | 'cancelado'
 // Progreso del usuario (si vos lo terminaste de ver, lo estás viendo, etc.)
 export type UserProgress = 'completado' | 'viendo' | 'en_pausa' | 'abandonado' | 'pendiente'
 
+export interface Profile {
+  id: string
+  username: string | null
+  enabled_categories: MediaType[]
+  is_public: boolean
+  share_slug: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface MediaItem {
   id: string
   title: string

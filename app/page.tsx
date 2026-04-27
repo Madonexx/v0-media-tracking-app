@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { MediaItem, Achievement, UserAchievement, MediaType } from '@/lib/types'
+import { MediaItem, Achievement, UserAchievement, MediaType, Profile } from '@/lib/types'
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
 import { MediaList } from '@/components/media-list'
 import { AchievementsList } from '@/components/achievements-list'
+import { SettingsDialog } from '@/components/settings-dialog'
 import { Spinner } from '@/components/ui/spinner'
 
 type TabType = 'dashboard' | 'achievements' | MediaType
@@ -16,24 +18,40 @@ export default function Home() {
   const [items, setItems] = useState<MediaItem[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([])
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   
   const supabase = createClient()
+  const router = useRouter()
 
-  const fetchData = useCallback(async () => {
-    const [itemsRes, achievementsRes, userAchievementsRes] = await Promise.all([
-      supabase.from('media_items').select('*').order('updated_at', { ascending: false }),
+  const fetchData = useCallback(async (userId: string) => {
+    // Only fetch profile if we don't have it or need update
+    const [itemsRes, achievementsRes, userAchievementsRes, profileRes] = await Promise.all([
+      supabase.from('media_items').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
       supabase.from('achievements').select('*'),
-      supabase.from('user_achievements').select('*')
+      supabase.from('user_achievements').select('*').eq('user_id', userId),
+      supabase.from('profiles').select('*').eq('id', userId).single()
     ])
     
-    setItems(itemsRes.data || [])
+    // Map database fields to our expected MediaItem type
+    const mappedItems = (itemsRes.data || []).map((item: any) => ({
+      ...item,
+      content_status: item.content_status || item.status || 'no_empezado',
+      user_progress: item.user_progress || (item.is_watching ? 'viendo' : (item.status === 'terminado' ? 'completado' : 'pendiente'))
+    }))
+    
+    setItems(mappedItems)
     setAchievements(achievementsRes.data || [])
     setUserAchievements(userAchievementsRes.data || [])
+    setProfile(profileRes.data)
     setLoading(false)
   }, [supabase])
 
   const checkAndUnlockAchievements = useCallback(async () => {
+    if (!user) return
+    
     const currentItems = items
     const currentAchievements = achievements
     const currentUnlocked = new Set(userAchievements.map(ua => ua.achievement_id))
@@ -67,30 +85,42 @@ export default function Home() {
       }
       
       if (shouldUnlock) {
-        await supabase.from('user_achievements').insert({ achievement_id: achievement.id })
+        await supabase.from('user_achievements').insert({ 
+          achievement_id: achievement.id,
+          user_id: user.id 
+        })
       }
     }
     
     // Refetch user achievements after potential unlocks
-    const { data } = await supabase.from('user_achievements').select('*')
+    const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
     if (data) setUserAchievements(data)
-  }, [items, achievements, userAchievements, supabase])
+  }, [items, achievements, userAchievements, supabase, user])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+      } else {
+        setUser(session.user)
+        fetchData(session.user.id)
+      }
+    }
+    checkUser()
+  }, [supabase, router, fetchData])
 
   useEffect(() => {
-    if (items.length > 0 && achievements.length > 0) {
+    if (items.length > 0 && achievements.length > 0 && user) {
       checkAndUnlockAchievements()
     }
-  }, [items.length, achievements.length, checkAndUnlockAchievements])
+  }, [items.length, achievements.length, checkAndUnlockAchievements, user])
 
   const handleRefresh = () => {
-    fetchData()
+    if (user) fetchData(user.id)
   }
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -131,11 +161,23 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navigation 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        enabledCategories={profile?.enabled_categories}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
       
       <main className="container mx-auto px-4 py-8">
         {renderContent()}
       </main>
+
+      <SettingsDialog 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen}
+        profile={profile}
+        onUpdate={handleRefresh}
+      />
     </div>
   )
 }

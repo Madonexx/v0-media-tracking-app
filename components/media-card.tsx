@@ -27,9 +27,10 @@ interface MediaCardProps {
   onEdit?: (item: MediaItem) => void
   onDelete?: (item: MediaItem) => void
   compact?: boolean
+  readOnly?: boolean
 }
 
-export function MediaCard({ item, onEdit, onDelete, compact = false }: MediaCardProps) {
+export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = false }: MediaCardProps) {
   const progressIcon = {
     completado: <CheckCircle className="w-3 h-3" />,
     viendo: <Play className="w-3 h-3" />,
@@ -135,26 +136,28 @@ export function MediaCard({ item, onEdit, onDelete, compact = false }: MediaCard
                   {item.title}
                 </h3>
                 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 -mr-1 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                      <MoreVertical className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit?.(item)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onDelete?.(item)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Eliminar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {!readOnly && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 -mr-1 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEdit?.(item)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onDelete?.(item)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
               
               <div className="flex items-center gap-1.5 mt-2 flex-wrap">

@@ -1,29 +1,19 @@
 -- Seed anime data from user's spreadsheet
 
-INSERT INTO media_items (title, type, score, status, is_watching, is_up_to_date, dropped_at, last_episode) VALUES
-('Your Lie in April', 'anime', 10, 'terminado', false, true, NULL, 'S1E22'),
-('The Dangers in my heart', 'anime', 10, 'terminado', false, true, NULL, 'S2E24'),
-('Shikimori''s Not Just a Cutie', 'anime', 9, 'terminado', false, true, NULL, 'Manga 178'),
-('She and her cat everything flows', 'anime', 9, 'terminado', false, true, NULL, 'S1E4'),
-('Naruto', 'anime', 6, 'terminado', false, false, 'S17E475', 'E500'),
-('My Dress up Darling', 'anime', 10, 'terminado', false, true, NULL, 'S2E24'),
-('Fullmetal Alchemist Brotherhood', 'anime', 5, 'terminado', false, false, 'E2', 'E64'),
-('Fruit Baskets', 'anime', NULL, 'terminado', true, false, NULL, NULL),
-('Death Note', 'anime', 8, 'terminado', false, true, NULL, '37'),
-('The Angel next door spoils me rotten', 'anime', 8, 'saliendo', true, true, 'S2 E1', 'S2E3'),
-('One Piece', 'anime', 10, 'saliendo', true, true, NULL, NULL),
-('I made friends with the second prettiest girl in my class', 'anime', 9, 'saliendo', true, true, NULL, 'S1E3'),
-('Grand Blue Dreaming', 'anime', 5, 'no_empezado', true, false, 'S1 E4', 'S2 E24'),
-('You and I are polar opposites', 'anime', 8, 'en_espera', true, true, NULL, 'S1E12'),
-('Solo Leveling', 'anime', 8, 'en_espera', true, true, NULL, 'S2E25'),
-('Jujutsu Kaisen', 'anime', 9, 'en_espera', true, true, '-', NULL),
-('Haikyu', 'anime', 9, 'en_espera', true, true, NULL, 'La batalla del basurero'),
-('Frieren', 'anime', 9, 'en_espera', true, true, 'Season 2', 'S2E10'),
-('Demon Slayer', 'anime', 10, 'en_espera', true, true, NULL, 'Infinity Castle'),
-('More than a married couple but no lovers', 'anime', 9, 'cancelado', false, true, NULL, 'Manga 79'),
-('I''m Getting married to a girl i hate in my class', 'anime', 7, 'cancelado', false, true, NULL, NULL),
-('Kaguyama-Sama Love is War', 'anime', NULL, 'en_espera', false, false, NULL, NULL),
-('Attack on Titan', 'anime', 10, 'terminado', false, true, NULL, NULL);
+INSERT INTO media_items (title, type, score, status, is_watching, is_up_to_date, dropped_at, last_episode, image_url) VALUES
+('Your Lie in April', 'anime', 10, 'terminado', false, true, NULL, 'S1E22', 'https://cdn.myanimelist.net/images/anime/3/67177.jpg'),
+('The Dangers in my heart', 'anime', 10, 'terminado', false, true, NULL, 'S2E24', 'https://cdn.myanimelist.net/images/anime/1015/138052.jpg'),
+('Shikimori''s Not Just a Cutie', 'anime', 9, 'terminado', false, true, NULL, 'Manga 178', 'https://cdn.myanimelist.net/images/anime/1315/122044.jpg'),
+('She and her cat everything flows', 'anime', 9, 'terminado', false, true, NULL, 'S1E4', 'https://cdn.myanimelist.net/images/anime/4/78501.jpg'),
+('Naruto', 'anime', 6, 'terminado', false, false, 'S17E475', 'E500', 'https://cdn.myanimelist.net/images/anime/13/17405.jpg'),
+('My Dress up Darling', 'anime', 10, 'terminado', false, true, NULL, 'S2E24', 'https://cdn.myanimelist.net/images/anime/1179/119045.jpg'),
+('Death Note', 'anime', 8, 'terminado', false, true, NULL, '37', 'https://cdn.myanimelist.net/images/anime/9/9453.jpg'),
+('One Piece', 'anime', 10, 'saliendo', true, true, NULL, NULL, 'https://cdn.myanimelist.net/images/anime/1244/138851.jpg'),
+('Solo Leveling', 'anime', 8, 'en_espera', true, true, NULL, 'S2E25', 'https://cdn.myanimelist.net/images/anime/1337/138683.jpg'),
+('Jujutsu Kaisen', 'anime', 9, 'en_espera', true, true, '-', NULL, 'https://cdn.myanimelist.net/images/anime/1171/109222.jpg'),
+('Frieren', 'anime', 9, 'en_espera', true, true, 'Season 2', 'S2E10', 'https://cdn.myanimelist.net/images/anime/1015/138052.jpg'),
+('Demon Slayer', 'anime', 10, 'en_espera', true, true, NULL, 'Infinity Castle', 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg'),
+('Attack on Titan', 'anime', 10, 'terminado', false, true, NULL, NULL, 'https://cdn.myanimelist.net/images/anime/10/47347.jpg');
 
 -- Seed some initial achievements
 INSERT INTO achievements (name, description, icon, condition_type, condition_value, points) VALUES
