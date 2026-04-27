@@ -15,8 +15,8 @@ export function StarRating({ value, onChange, readOnly = false, max = 10 }: Star
   const [hover, setHover] = useState<number | null>(null)
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-0.5">
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center -ml-1">
         {[...Array(max)].map((_, i) => {
           const starValue = i + 1
           const isFilled = hover !== null ? starValue <= hover : starValue <= (value || 0)
@@ -32,19 +32,19 @@ export function StarRating({ value, onChange, readOnly = false, max = 10 }: Star
               className={cn(
                 "p-0.5 transition-all duration-200",
                 !readOnly && "hover:scale-125 cursor-pointer",
-                isFilled ? "text-warning" : "text-muted-foreground/30"
+                isFilled ? "text-warning" : "text-muted-foreground/20"
               )}
             >
               <Star 
                 className={cn(
-                  "w-5 h-5", 
-                  isFilled && "fill-current drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]"
+                  "w-4 h-4", 
+                  isFilled && "fill-current drop-shadow-[0_0_3px_rgba(234,179,8,0.5)]"
                 )} 
               />
             </button>
           )
         })}
-        <span className="ml-2 text-sm font-bold w-6 text-center">
+        <span className="ml-1 text-[11px] font-bold w-4 text-center text-muted-foreground">
           {hover !== null ? hover : value || 0}
         </span>
       </div>

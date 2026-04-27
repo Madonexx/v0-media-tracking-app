@@ -9,9 +9,10 @@ interface StatsCardProps {
   icon: React.ReactNode
   color?: 'primary' | 'accent' | 'success' | 'warning'
   subtitle?: string
+  onClick?: () => void
 }
 
-export function StatsCard({ title, value, icon, color = 'primary', subtitle }: StatsCardProps) {
+export function StatsCard({ title, value, icon, color = 'primary', subtitle, onClick }: StatsCardProps) {
   const colorClasses = {
     primary: 'glow-primary border-primary/30',
     accent: 'glow-accent border-accent/30',
@@ -27,7 +28,14 @@ export function StatsCard({ title, value, icon, color = 'primary', subtitle }: S
   }
 
   return (
-    <Card className={cn('border-2 transition-all hover:scale-105', colorClasses[color])}>
+    <Card 
+      className={cn(
+        'border-2 transition-all', 
+        colorClasses[color],
+        onClick && "cursor-pointer hover:scale-105 active:scale-95"
+      )}
+      onClick={onClick}
+    >
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
           <div className={cn('p-3 rounded-lg bg-secondary', iconColorClasses[color])}>

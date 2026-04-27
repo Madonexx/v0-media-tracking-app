@@ -52,14 +52,17 @@ export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSe
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center h-16 gap-2">
-          <div className="flex items-center gap-2 mr-6">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+          <button 
+            onClick={() => onTabChange('dashboard')}
+            className="flex items-center gap-2 mr-6 hover:opacity-80 transition-opacity cursor-pointer group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center group-hover:glow-primary transition-all">
               <Gamepad2 className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-lg hidden sm:block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               MediaQuest
             </span>
-          </div>
+          </button>
           
           <div className="flex items-center gap-1 overflow-x-auto pb-px flex-1">
             {navItems.map((item) => (

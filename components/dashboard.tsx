@@ -1,6 +1,6 @@
 'use client'
 
-import { MediaItem, Achievement, UserAchievement, TYPE_LABELS } from '@/lib/types'
+import { MediaItem, Achievement, UserAchievement, TYPE_LABELS, MediaType, UserProgress } from '@/lib/types'
 import { StatsCard } from './stats-card'
 import { AchievementCard } from './achievement-card'
 import { MediaCard } from './media-card'
@@ -12,9 +12,12 @@ interface DashboardProps {
   items: MediaItem[]
   achievements: Achievement[]
   userAchievements: UserAchievement[]
+  onStatClick?: (tab: string, filters?: UserProgress[]) => void
+  onEditItem?: (item: MediaItem) => void
+  readOnly?: boolean
 }
 
-export function Dashboard({ items, achievements, userAchievements }: DashboardProps) {
+export function Dashboard({ items, achievements, userAchievements, onStatClick, onEditItem, readOnly = false }: DashboardProps) {
   const totalItems = items.length
   const completedItems = items.filter(i => i.user_progress === 'completado').length
   const watchingItems = items.filter(i => i.user_progress === 'viendo').length
@@ -30,7 +33,8 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6)
   
-  const upToDateItems = items.filter(i => i.is_up_to_date).length
+  // Get first available media type from user's items to use as fallback for stat redirects
+  const firstMediaType = items.length > 0 ? items[0].type : 'anime'
   
   // Calculate stats by type
   const statsByType = Object.keys(TYPE_LABELS).map(type => ({
@@ -60,7 +64,7 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
             </div>
           </div>
           <Progress 
-            value={(userAchievements.length / achievements.length) * 100} 
+            value={(userAchievements.length / (achievements.length || 1)) * 100} 
             className="mt-4 h-2"
           />
         </CardContent>
@@ -73,19 +77,22 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
           value={totalItems}
           icon={<Library className="w-5 h-5" />}
           color="primary"
+          onClick={() => onStatClick?.(firstMediaType, [])}
         />
         <StatsCard
           title="Completados"
           value={completedItems}
           icon={<CheckCircle className="w-5 h-5" />}
           color="success"
-          subtitle={`${Math.round((completedItems / totalItems) * 100) || 0}% del total`}
+          subtitle={`${Math.round((completedItems / (totalItems || 1)) * 100) || 0}% del total`}
+          onClick={() => onStatClick?.(firstMediaType, ['completado'])}
         />
         <StatsCard
           title="Viendo Ahora"
           value={watchingItems}
           icon={<Play className="w-5 h-5" />}
           color="accent"
+          onClick={() => onStatClick?.(firstMediaType, ['viendo'])}
         />
         <StatsCard
           title="Puntuacion Media"
@@ -98,7 +105,7 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
       {/* Content by Type */}
       <Card className="border-2 border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
             Contenido por Categoria
           </CardTitle>
@@ -106,16 +113,23 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
         <CardContent>
           <div className="space-y-4">
             {statsByType.map(({ type, label, count, completed }) => (
-              <div key={type} className="space-y-2">
+              <div 
+                key={type} 
+                className={cn(
+                  "space-y-2 p-2 rounded-lg transition-colors",
+                  count > 0 && "cursor-pointer hover:bg-muted/50"
+                )}
+                onClick={() => count > 0 && onStatClick?.(type, [])}
+              >
                 <div className="flex items-center justify-between text-sm">
-                  <span>{label}</span>
-                  <span className="text-muted-foreground">
+                  <span className="font-medium">{label}</span>
+                  <span className="text-muted-foreground text-xs">
                     {completed}/{count} completados
                   </span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
+                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
                     style={{ width: `${count > 0 ? (completed / count) * 100 : 0}%` }}
                   />
                 </div>
@@ -129,15 +143,20 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-2 border-border">
           <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
+            <CardTitle className="text-lg">Actividad Reciente</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-3">
             {recentItems.length > 0 ? (
               recentItems.map(item => (
-                <MediaCard key={item.id} item={item} />
+                <MediaCard 
+                  key={item.id} 
+                  item={item} 
+                  onEdit={onEditItem}
+                  readOnly={readOnly}
+                />
               ))
             ) : (
-              <p className="text-center text-muted-foreground py-4">
+              <p className="text-center text-muted-foreground py-8 text-sm italic">
                 No hay actividad reciente
               </p>
             )}
@@ -146,12 +165,12 @@ export function Dashboard({ items, achievements, userAchievements }: DashboardPr
         
         <Card className="border-2 border-border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Trophy className="w-5 h-5 text-warning" />
               Logros Recientes
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-3">
             {achievements.slice(0, 4).map(achievement => (
               <AchievementCard
                 key={achievement.id}

@@ -3,18 +3,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { MediaItem, Achievement, UserAchievement, MediaType, Profile } from '@/lib/types'
+import { MediaItem, Achievement, UserAchievement, MediaType, Profile, UserProgress } from '@/lib/types'
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
 import { MediaList } from '@/components/media-list'
 import { AchievementsList } from '@/components/achievements-list'
 import { SettingsDialog } from '@/components/settings-dialog'
+import { AddMediaDialog } from '@/components/add-media-dialog'
 import { Spinner } from '@/components/ui/spinner'
 
 type TabType = 'dashboard' | 'achievements' | MediaType
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
+  const [initialFilters, setInitialFilters] = useState<UserProgress[]>([])
   const [items, setItems] = useState<MediaItem[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([])
@@ -23,11 +25,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   
+  // Dashboard edit state
+  const [editItem, setEditItem] = useState<MediaItem | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  
   const supabase = createClient()
   const router = useRouter()
 
   const fetchData = useCallback(async (userId: string) => {
-    // Only fetch profile if we don't have it or need update
     const [itemsRes, achievementsRes, userAchievementsRes, profileRes] = await Promise.all([
       supabase.from('media_items').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
       supabase.from('achievements').select('*'),
@@ -35,7 +40,6 @@ export default function Home() {
       supabase.from('profiles').select('*').eq('id', userId).single()
     ])
     
-    // Map database fields to our expected MediaItem type
     const mappedItems = (itemsRes.data || []).map((item: any) => ({
       ...item,
       content_status: item.content_status || item.status || 'no_empezado',
@@ -92,7 +96,6 @@ export default function Home() {
       }
     }
     
-    // Refetch user achievements after potential unlocks
     const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
     if (data) setUserAchievements(data)
   }, [items, achievements, userAchievements, supabase, user])
@@ -120,6 +123,26 @@ export default function Home() {
     if (user) fetchData(user.id)
   }
 
+  const handleStatClick = (tab: string, filters: UserProgress[] = []) => {
+    setInitialFilters(filters)
+    setActiveTab(tab as TabType)
+  }
+
+  const handleEditItem = (item: MediaItem) => {
+    setEditItem(item)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleEditSuccess = () => {
+    handleRefresh()
+    setEditItem(null)
+  }
+
+  const onTabChange = (tab: TabType) => {
+    setInitialFilters([]) // Clear filters when changing tabs normally
+    setActiveTab(tab)
+  }
+
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -138,7 +161,9 @@ export default function Home() {
           <Dashboard 
             items={items} 
             achievements={achievements} 
-            userAchievements={userAchievements} 
+            userAchievements={userAchievements}
+            onStatClick={handleStatClick}
+            onEditItem={handleEditItem}
           />
         )
       case 'achievements':
@@ -151,9 +176,11 @@ export default function Home() {
       default:
         return (
           <MediaList 
+            key={`${activeTab}-${initialFilters.join(',')}`}
             items={items.filter(i => i.type === activeTab)} 
             type={activeTab} 
             onRefresh={handleRefresh}
+            initialFilters={initialFilters}
           />
         )
     }
@@ -163,7 +190,7 @@ export default function Home() {
     <div className="min-h-screen">
       <Navigation 
         activeTab={activeTab} 
-        onTabChange={setActiveTab} 
+        onTabChange={onTabChange} 
         enabledCategories={profile?.enabled_categories}
         onOpenSettings={() => setSettingsOpen(true)}
       />
@@ -177,6 +204,14 @@ export default function Home() {
         onOpenChange={setSettingsOpen}
         profile={profile}
         onUpdate={handleRefresh}
+      />
+
+      <AddMediaDialog 
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        editItem={editItem}
+        onSuccess={handleEditSuccess}
+        defaultType={editItem?.type || 'anime'}
       />
     </div>
   )

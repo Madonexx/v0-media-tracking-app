@@ -16,15 +16,8 @@ import {
   TYPE_LABELS 
 } from '@/lib/types'
 import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen, Plus } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { StarRating } from './star-rating'
 
 interface MediaCardProps {
   item: MediaItem
@@ -40,7 +33,7 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
   const supabase = createClient()
 
   const handleIncrement = async (e: React.MouseEvent) => {
-    e.stopPropagation()
+    e.stopPropagation() // Prevent triggering the card's click (edit)
     if (updating || readOnly) return
     
     setUpdating(true)
@@ -54,7 +47,6 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
       updated_at: new Date().toISOString()
     }
 
-    // Auto-complete if total is reached
     if (item.total_progress && nextProgress >= item.total_progress) {
       updateData.user_progress = 'completado'
     }
@@ -117,19 +109,23 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
   }
 
   return (
-    <Card className={cn(
-      "group border-2 border-border hover:border-primary/50 transition-all overflow-hidden border-l-4",
-      PROGRESS_BORDER_COLORS[item.user_progress],
-      PROGRESS_GLOW[item.user_progress],
-      item.user_progress === 'abandonado' && "opacity-60 hover:opacity-100",
-      item.user_progress === 'viendo' && "ring-1 ring-primary/30"
-    )}>
+    <Card 
+      className={cn(
+        "group border-2 border-border hover:border-primary/50 transition-all overflow-hidden border-l-4 relative",
+        PROGRESS_BORDER_COLORS[item.user_progress],
+        PROGRESS_GLOW[item.user_progress],
+        !readOnly && "cursor-pointer active:scale-[0.98]",
+        item.user_progress === 'abandonado' && "opacity-60 hover:opacity-100",
+        item.user_progress === 'viendo' && "ring-1 ring-primary/30"
+      )}
+      onClick={() => !readOnly && onEdit?.(item)}
+    >
       <CardContent className="p-0">
         <div className="flex relative">
-          {/* User progress badge */}
-          <div className="absolute top-0 right-0 z-10">
+          {/* User progress badge - MOVED TO LEFT */}
+          <div className="absolute top-0 left-0 z-10">
             <div className={cn(
-              "text-[9px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1",
+              "text-[9px] font-bold px-2 py-0.5 rounded-br-lg flex items-center gap-1",
               USER_PROGRESS_COLORS[item.user_progress]
             )}>
               {item.user_progress === 'viendo' && <Play className="w-2.5 h-2.5 fill-current" />}
@@ -152,8 +148,9 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                 <span className="text-[10px]">Sin imagen</span>
               </div>
             )}
-            <div className="absolute top-1 left-1">
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-background/80 backdrop-blur-sm">
+            {/* Type badge overlay - bottom right of image */}
+            <div className="absolute bottom-1 right-1">
+              <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-background/80 backdrop-blur-sm h-4">
                 {TYPE_LABELS[item.type]}
               </Badge>
             </div>
@@ -163,40 +160,16 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
           <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
             <div>
               <div className="flex items-start justify-between gap-1">
-                <h3 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                <h3 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
                   {item.title}
                 </h3>
-                
-                {!readOnly && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 -mr-1 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        <MoreVertical className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit?.(item)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onDelete?.(item)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               </div>
               
               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                 <Badge 
                   variant="outline" 
-                  className={cn('text-[10px] px-1.5 py-0 flex items-center gap-0.5 border', CONTENT_STATUS_COLORS[item.content_status])}
+                  className={cn('text-[10px] px-1.5 py-0 flex items-center gap-0.5 border h-4', CONTENT_STATUS_COLORS[item.content_status])}
                 >
-                  <BookOpen className="w-2.5 h-2.5" />
                   {CONTENT_STATUS_LABELS[item.content_status]}
                 </Badge>
                 
@@ -208,8 +181,8 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                 )}
               </div>
 
-              {/* NEW Progress Tracker UI */}
-              <div className="mt-3 space-y-1.5">
+              {/* Progress Tracker UI */}
+              <div className="mt-4 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] font-medium text-muted-foreground">
                     Progreso: <span className="text-foreground font-bold">{localProgress}</span>
