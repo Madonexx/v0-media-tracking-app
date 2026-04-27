@@ -7,6 +7,7 @@ import { MediaCard } from './media-card'
 import { Library, CheckCircle, Play, Star, Trophy, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 interface DashboardProps {
   items: MediaItem[]

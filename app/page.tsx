@@ -67,24 +67,23 @@ export default function Home() {
       const condition = achievement.condition_value as Record<string, unknown>
       
       switch (achievement.condition_type) {
-        case 'count_total':
-          shouldUnlock = currentItems.length >= (condition.min as number)
+        case 'total_items':
+          shouldUnlock = currentItems.length >= (condition.count as number)
           break
-        case 'count_completed':
+        case 'completed_by_type':
           const typeFilter = condition.type as string | undefined
           const completedCount = currentItems.filter(i => 
             i.user_progress === 'completado' && 
             (!typeFilter || i.type === typeFilter)
           ).length
-          shouldUnlock = completedCount >= (condition.min as number)
+          shouldUnlock = completedCount >= (condition.count as number)
           break
-        case 'count_score':
-          const scoreCount = currentItems.filter(i => i.score === (condition.score as number)).length
-          shouldUnlock = scoreCount >= (condition.min as number)
+        case 'perfect_score':
+          const perfectCount = currentItems.filter(i => i.score === 10).length
+          shouldUnlock = perfectCount >= (condition.count as number)
           break
         case 'count_up_to_date':
-          const upToDateCount = currentItems.filter(i => i.is_up_to_date).length
-          shouldUnlock = upToDateCount >= (condition.min as number)
+          shouldUnlock = currentItems.filter(i => i.is_up_to_date).length >= (condition.count as number)
           break
       }
       

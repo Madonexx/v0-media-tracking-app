@@ -33,6 +33,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
 import { StarRating } from './star-rating'
+import { cn } from '@/lib/utils'
 
 interface AddMediaDialogProps {
   open: boolean
@@ -67,7 +68,7 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
   // Update form when editItem or prefillData changes
   useEffect(() => {
     const newSource = editItem || prefillData
-    if (newSource) {
+    if (newSource && open) {
       setFormData({
         title: newSource.title || '',
         type: newSource.type || defaultType,
@@ -108,11 +109,18 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       return
     }
 
-    // Prepare data - we include 'status' for compatibility with old schema
+    // Special logic for movies: map "Visto" toggle to user_progress
+    let finalProgress = formData.user_progress
+    if (formData.type === 'movie') {
+      // If movie has a score or notes and progress was completado, keep it
+      // This is mostly handled by the UI toggle now
+    }
+
+    // Prepare data
     const dataToSave: any = {
       ...formData,
-      user_id: user.id, // Assign ownership
-      status: formData.content_status, // For old schema
+      user_id: user.id,
+      status: formData.content_status, // For old schema compatibility
       score: formData.score || null,
       dropped_at: formData.dropped_at || null,
       last_episode: formData.last_episode || null,
@@ -135,11 +143,10 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         .insert(dataToSave)
     }
     
-    // If it fails, it might be because of column mismatch (new columns don't exist yet)
     if (result.error) {
-      console.warn('Initial save failed, trying compatibility mode:', result.error.message)
+      console.warn('Save failed:', result.error.message)
       
-      // Compatibility mode: remove columns that might not exist in old schema
+      // Compatibility mode retry
       const compatibilityData = { ...dataToSave }
       delete compatibilityData.content_status
       delete compatibilityData.user_progress
@@ -147,18 +154,12 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       delete compatibilityData.total_progress
       
       if (editItem) {
-        result = await supabase
-          .from('media_items')
-          .update(compatibilityData)
-          .eq('id', editItem.id)
+        result = await supabase.from('media_items').update(compatibilityData).eq('id', editItem.id)
       } else {
-        result = await supabase
-          .from('media_items')
-          .insert(compatibilityData)
+        result = await supabase.from('media_items').insert(compatibilityData)
       }
       
       if (result.error) {
-        console.error('Final save attempt failed:', result.error)
         alert(`Error al guardar: ${result.error.message}`)
         setLoading(false)
         return
@@ -169,240 +170,227 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
     onSuccess()
     onOpenChange(false)
     
-    // Reset form
-    setFormData({
-      title: '',
-      type: defaultType,
-      score: null,
-      content_status: 'no_empezado',
-      user_progress: 'pendiente',
-      is_watching: false,
-      is_up_to_date: false,
-      dropped_at: '',
-      last_episode: '',
-      current_progress: 0,
-      total_progress: null,
-      notes: '',
-      image_url: ''
-    })
+    // Reset form for next add
+    if (!editItem) {
+      setFormData({
+        title: '',
+        type: defaultType,
+        score: null,
+        content_status: 'no_empezado',
+        user_progress: 'pendiente',
+        is_watching: false,
+        is_up_to_date: false,
+        dropped_at: '',
+        last_episode: '',
+        current_progress: 0,
+        total_progress: null,
+        notes: '',
+        image_url: ''
+      })
+    }
   }
+
+  const isMovie = formData.type === 'movie'
+  const isTypeFixed = !editItem // Hide type selector when adding new (implied by context)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-card border-2 border-primary/30 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {editItem ? 'Editar' : prefillData ? 'Completar datos de' : 'Agregar'} {TYPE_LABELS[formData.type as MediaType]}
+            {editItem ? 'Editar' : 'Agregar'} {TYPE_LABELS[formData.type as MediaType]}
           </DialogTitle>
           <DialogDescription>
             {editItem 
               ? 'Modifica los datos de tu contenido' 
-              : prefillData 
-                ? 'Completa el estado y progreso de este contenido'
-                : 'Agrega nuevo contenido a tu biblioteca'
+              : `Ingresa la información de tu nueva ${TYPE_LABELS[formData.type as MediaType].toLowerCase()}`
             }
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Image preview when coming from API search */}
-          {formData.image_url && (
-            <div className="flex gap-4 p-3 rounded-lg bg-muted/50 border border-border">
-              <div className="w-16 h-24 flex-shrink-0 rounded overflow-hidden">
-                <img
-                  src={formData.image_url}
-                  alt={formData.title || 'Preview'}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{formData.title}</p>
-                {formData.notes && (
-                  <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{formData.notes}</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Nombre del contenido"
-              required
-              className="border-border focus:border-primary"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-5 py-2">
+          {/* Section 1: Basic Info */}
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Tipo</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value as MediaType })}
-              >
-                <SelectTrigger className="border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Puntuación</Label>
-              <StarRating 
-                value={formData.score || null} 
-                onChange={(val) => setFormData({ ...formData, score: val })}
+              <Label htmlFor="title" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                Título
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Nombre del contenido"
+                required
+                className="border-border focus:border-primary h-10"
               />
             </div>
-          </div>
 
-          {/* Progress Section */}
-          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
-            <Label className="text-primary font-bold">Progreso Numérico</Label>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="current_progress" className="text-xs">Visto/Leído</Label>
-                <Input
-                  id="current_progress"
-                  type="number"
-                  min="0"
-                  value={formData.current_progress}
-                  onChange={(e) => setFormData({ ...formData, current_progress: parseInt(e.target.value) || 0 })}
-                  className="h-8 border-border focus:border-primary"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="total_progress" className="text-xs">Total (opcional)</Label>
-                <Input
-                  id="total_progress"
-                  type="number"
-                  min="0"
-                  value={formData.total_progress || ''}
-                  onChange={(e) => setFormData({ ...formData, total_progress: e.target.value ? parseInt(e.target.value) : null })}
-                  placeholder="?"
-                  className="h-8 border-border focus:border-primary"
+              {!isTypeFixed && (
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                    Tipo
+                  </Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => setFormData({ ...formData, type: value as MediaType })}
+                  >
+                    <SelectTrigger className="border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              <div className={cn("space-y-2", isTypeFixed && "col-span-2")}>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+                  Puntuación
+                </Label>
+                <StarRating 
+                  value={formData.score || null} 
+                  onChange={(val) => setFormData({ ...formData, score: val })}
                 />
               </div>
             </div>
           </div>
 
-          {/* Separated status fields with clear labels */}
-          <div className="p-3 rounded-lg bg-muted/30 border border-border space-y-4">
+          {/* Section 2: Status & Progress (Conditional) */}
+          <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-4">
+            <Label className="text-xs uppercase tracking-wider text-primary font-bold">
+              Estado y Progreso
+            </Label>
+            
+            {isMovie ? (
+              // MOVIE VIEW: Simple "Watched" toggle
+              <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg border border-border/50">
+                <div className="space-y-0.5">
+                  <Label htmlFor="movie-watched" className="text-sm font-medium">
+                    {formData.user_progress === 'completado' ? 'Ya la vi' : 'Pendiente'}
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">Marca si ya terminaste de verla</p>
+                </div>
+                <Switch
+                  id="movie-watched"
+                  checked={formData.user_progress === 'completado'}
+                  onCheckedChange={(checked) => setFormData({ 
+                    ...formData, 
+                    user_progress: checked ? 'completado' : 'pendiente' 
+                  })}
+                />
+              </div>
+            ) : (
+              // ANIME/SERIES/BOOKS/GAMES VIEW: Full tracking
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="content_status" className="text-[10px] text-cyan-400 font-bold uppercase">
+                      ¿Terminó de emitirse?
+                    </Label>
+                    <Select
+                      value={formData.content_status}
+                      onValueChange={(value) => setFormData({ ...formData, content_status: value as ContentStatus })}
+                    >
+                      <SelectTrigger className="h-8 text-xs border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CONTENT_STATUS_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value} className="text-xs">{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="user_progress" className="text-[10px] text-primary font-bold uppercase">
+                      Mi progreso
+                    </Label>
+                    <Select
+                      value={formData.user_progress}
+                      onValueChange={(value) => setFormData({ ...formData, user_progress: value as UserProgress })}
+                    >
+                      <SelectTrigger className="h-8 text-xs border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(USER_PROGRESS_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value} className="text-xs">{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 bg-background/40 p-3 rounded-lg border border-border/40">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="current_progress" className="text-[10px] font-bold">VISTO / LEÍDO</Label>
+                    <Input
+                      id="current_progress"
+                      type="number"
+                      min="0"
+                      value={formData.current_progress}
+                      onChange={(e) => setFormData({ ...formData, current_progress: parseInt(e.target.value) || 0 })}
+                      className="h-8 text-xs border-border focus:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="total_progress" className="text-[10px] font-bold text-muted-foreground">TOTAL (OPCIONAL)</Label>
+                    <Input
+                      id="total_progress"
+                      type="number"
+                      min="0"
+                      value={formData.total_progress || ''}
+                      onChange={(e) => setFormData({ ...formData, total_progress: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="?"
+                      className="h-8 text-xs border-border focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Visuals & Notes */}
+          <div className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="content_status" className="flex items-center gap-2">
-                <span className="text-cyan-400">Estado del contenido</span>
-                <span className="text-xs text-muted-foreground">(¿Terminó de emitirse?)</span>
+              <Label htmlFor="image_url" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                URL de imagen
               </Label>
-              <Select
-                value={formData.content_status}
-                onValueChange={(value) => setFormData({ ...formData, content_status: value as ContentStatus })}
-              >
-                <SelectTrigger className="border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CONTENT_STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="image_url"
+                value={formData.image_url || ''}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://ejemplo.com/poster.jpg"
+                className="border-border focus:border-primary h-9"
+              />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="user_progress" className="flex items-center gap-2">
-                <span className="text-primary">Mi progreso</span>
-                <span className="text-xs text-muted-foreground">(¿Lo terminaste de ver?)</span>
+              <Label htmlFor="notes" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                Descripción
               </Label>
-              <Select
-                value={formData.user_progress}
-                onValueChange={(value) => setFormData({ ...formData, user_progress: value as UserProgress })}
-              >
-                <SelectTrigger className="border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(USER_PROGRESS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="last_episode">Etiqueta de texto (opcional)</Label>
-              <Input
-                id="last_episode"
-                value={formData.last_episode || ''}
-                onChange={(e) => setFormData({ ...formData, last_episode: e.target.value })}
-                placeholder="Ej: S2E10"
-                className="border-border focus:border-primary"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="dropped_at">
-                {formData.user_progress === 'abandonado' ? 'Lo dejé en' : 'Pausado en (opcional)'}
-              </Label>
-              <Input
-                id="dropped_at"
-                value={formData.dropped_at || ''}
-                onChange={(e) => setFormData({ ...formData, dropped_at: e.target.value })}
-                placeholder="Ej: E5"
-                className="border-border focus:border-primary"
+              <Textarea
+                id="notes"
+                value={formData.notes || ''}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Sinopsis, pensamientos o notas personales..."
+                className="border-border focus:border-primary resize-none min-h-[80px]"
               />
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="is_up_to_date"
-                checked={formData.is_up_to_date}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_up_to_date: checked })}
-              />
-              <Label htmlFor="is_up_to_date" className="text-sm">Estoy al día</Label>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="image_url">URL de imagen (opcional)</Label>
-            <Input
-              id="image_url"
-              value={formData.image_url || ''}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://..."
-              className="border-border focus:border-primary"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes || ''}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Notas adicionales..."
-              className="border-border focus:border-primary resize-none"
-              rows={2}
-            />
-          </div>
-          
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="glow-primary">
+            <Button type="submit" disabled={loading} className="glow-primary px-8">
               {loading && <Spinner className="mr-2 h-4 w-4" />}
-              {editItem ? 'Guardar' : 'Agregar'}
+              {editItem ? 'Guardar Cambios' : `Agregar ${TYPE_LABELS[formData.type as MediaType]}`}
             </Button>
           </DialogFooter>
         </form>
