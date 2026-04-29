@@ -29,11 +29,17 @@ export function MediaCatalog({ onAddSuccess, existingItems }: MediaCatalogProps)
     async function loadTrending() {
       setLoading(true)
       const data = await getTrendingMedia(activeType)
-      setItems(data)
+      
+      // Filter out items already in the library (by title match)
+      const filtered = data.filter(item => 
+        !existingTitles.has(item.title.toLowerCase())
+      ).slice(0, 12) // Only show 12 items
+      
+      setItems(filtered)
       setLoading(false)
     }
     loadTrending()
-  }, [activeType])
+  }, [activeType, existingItems])
 
   const handleAdd = async (item: SearchResult) => {
     setAddingId(item.id)
@@ -99,63 +105,59 @@ export function MediaCatalog({ onAddSuccess, existingItems }: MediaCatalogProps)
           <Spinner className="w-8 h-8 text-primary mb-4" />
           <p className="text-muted-foreground">Cargando tendencias...</p>
         </div>
+      ) : items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-xl">
+          <Sparkles className="w-12 h-12 text-muted-foreground opacity-20 mb-4" />
+          <p className="text-muted-foreground font-medium">¡Vaya! Ya tienes todo lo popular en tu biblioteca.</p>
+          <p className="text-sm text-muted-foreground/60">Vuelve más tarde para ver nuevas tendencias.</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {items.map((item) => {
-            const isInLibrary = existingTitles.has(item.title.toLowerCase())
-            
-            return (
-              <Card key={item.id} className="group overflow-hidden border-2 hover:border-primary/40 transition-all flex flex-col h-full">
-                <div className="aspect-[2/3] relative bg-muted overflow-hidden">
-                  {item.image_url ? (
-                    <img 
-                      src={item.image_url} 
-                      alt={item.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">
-                      {activeType === 'game' ? '🎮' : activeType === 'book' ? '📚' : '🎬'}
-                    </div>
-                  )}
-                  {item.score && (
-                    <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                      <Star className="w-3 h-3 text-warning fill-current" />
-                      <span className="text-xs font-bold">{item.score}</span>
-                    </div>
-                  )}
+          {items.map((item) => (
+            <Card key={item.id} className="group overflow-hidden border-2 hover:border-primary/40 transition-all flex flex-col h-full">
+              <div className="aspect-[2/3] relative bg-muted overflow-hidden">
+                {item.image_url ? (
+                  <img 
+                    src={item.image_url} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">
+                    {activeType === 'game' ? '🎮' : activeType === 'book' ? '📚' : '🎬'}
+                  </div>
+                )}
+                {item.score && (
+                  <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
+                    <Star className="w-3 h-3 text-warning fill-current" />
+                    <span className="text-xs font-bold">{item.score}</span>
+                  </div>
+                )}
+              </div>
+              <CardContent className="p-3 flex flex-col flex-1 justify-between">
+                <div>
+                  <h3 className="font-bold text-sm line-clamp-2 leading-tight mb-1">{item.title}</h3>
+                  <p className="text-[10px] text-muted-foreground">{item.year || 'Año desconocido'}</p>
                 </div>
-                <CardContent className="p-3 flex flex-col flex-1 justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm line-clamp-2 leading-tight mb-1">{item.title}</h3>
-                    <p className="text-[10px] text-muted-foreground">{item.year || 'Año desconocido'}</p>
-                  </div>
-                  
-                  <div className="mt-3">
-                    {isInLibrary ? (
-                      <Button variant="secondary" disabled className="w-full h-8 text-xs gap-1 opacity-70">
-                        <Check className="w-3 h-3" /> En biblioteca
-                      </Button>
+                
+                <div className="mt-3">
+                  <Button 
+                    onClick={() => handleAdd(item)} 
+                    disabled={addingId === item.id}
+                    variant="default" 
+                    className="w-full h-8 text-xs gap-1 glow-primary"
+                  >
+                    {addingId === item.id ? (
+                      <Spinner className="w-3 h-3" />
                     ) : (
-                      <Button 
-                        onClick={() => handleAdd(item)} 
-                        disabled={addingId === item.id}
-                        variant="default" 
-                        className="w-full h-8 text-xs gap-1 glow-primary"
-                      >
-                        {addingId === item.id ? (
-                          <Spinner className="w-3 h-3" />
-                        ) : (
-                          <Plus className="w-3 h-3" />
-                        )}
-                        Agregar
-                      </Button>
+                      <Plus className="w-3 h-3" />
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+                    Agregar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
