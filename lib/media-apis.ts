@@ -203,13 +203,6 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
   }
 }
 
-    return []
-  } catch (error) {
-    console.error(`Error getting trending ${type}:`, error)
-    return []
-  }
-}
-
 // Check if a media type supports API search
 export function supportsApiSearch(type: string): boolean {
   return ['anime', 'book'].includes(type)
