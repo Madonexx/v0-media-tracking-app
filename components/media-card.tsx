@@ -55,8 +55,12 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
       updated_at: new Date().toISOString()
     }
 
+    // Auto-complete if total progress reached
     if (item.total_progress && nextProgress >= item.total_progress) {
       updateData.user_progress = 'completado'
+    } else if (item.user_progress === 'pendiente' || item.user_progress === 'en_pausa') {
+      // If we start incrementing, move to "viendo"
+      updateData.user_progress = 'viendo'
     }
 
     const { error } = await supabase
@@ -82,6 +86,11 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
     const updateData: any = {
       current_progress: nextProgress,
       updated_at: new Date().toISOString()
+    }
+
+    // If we were completed and decrement, move back to "viendo"
+    if (item.user_progress === 'completado') {
+      updateData.user_progress = 'viendo'
     }
 
     const { error } = await supabase
@@ -253,17 +262,15 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                             <Minus className="h-2.5 w-2.5" />
                           </Button>
                         )}
-                        {item.user_progress !== 'completado' && (
-                          <Button 
-                            size="icon" 
-                            variant="outline" 
-                            className="h-5 w-5 border-primary/30 text-primary hover:bg-primary hover:text-white"
-                            onClick={handleIncrement}
-                            disabled={updating}
-                          >
-                            <Plus className="h-2.5 w-2.5" />
-                          </Button>
-                        )}
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className="h-5 w-5 border-primary/30 text-primary hover:bg-primary hover:text-white"
+                          onClick={handleIncrement}
+                          disabled={updating}
+                        >
+                          <Plus className="h-2.5 w-2.5" />
+                        </Button>
                       </div>
                     )}
                   </div>

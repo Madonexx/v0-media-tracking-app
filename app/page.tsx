@@ -7,12 +7,13 @@ import { MediaItem, Achievement, UserAchievement, MediaType, Profile, UserProgre
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
 import { MediaList } from '@/components/media-list'
+import { MediaCatalog } from '@/components/media-catalog'
 import { AchievementsList } from '@/components/achievements-list'
 import { SettingsDialog } from '@/components/settings-dialog'
 import { AddMediaDialog } from '@/components/add-media-dialog'
 import { Spinner } from '@/components/ui/spinner'
 
-type TabType = 'dashboard' | 'achievements' | MediaType
+type TabType = 'dashboard' | 'achievements' | 'catalog' | MediaType
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
@@ -170,6 +171,13 @@ export default function Home() {
           <AchievementsList 
             achievements={achievements} 
             userAchievements={userAchievements} 
+          />
+        )
+      case 'catalog':
+        return (
+          <MediaCatalog 
+            onAddSuccess={handleRefresh}
+            existingItems={items}
           />
         )
       default:

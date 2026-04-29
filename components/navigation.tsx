@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { MediaType, TYPE_LABELS } from '@/lib/types'
-import { Home, Tv, Film, BookOpen, Gamepad2, Clapperboard, Trophy, Settings, LogOut, User } from 'lucide-react'
+import { Home, Tv, Film, BookOpen, Gamepad2, Clapperboard, Trophy, Settings, LogOut, User, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -16,8 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 interface NavigationProps {
-  activeTab: 'dashboard' | 'achievements' | MediaType
-  onTabChange: (tab: 'dashboard' | 'achievements' | MediaType) => void
+  activeTab: 'dashboard' | 'achievements' | 'catalog' | MediaType
+  onTabChange: (tab: 'dashboard' | 'achievements' | 'catalog' | MediaType) => void
   enabledCategories?: MediaType[]
   onOpenSettings?: () => void
 }
@@ -34,6 +34,7 @@ export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSe
 
   const allNavItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: Home, type: 'core' },
+    { id: 'catalog' as const, label: 'Catálogo', icon: Sparkles, type: 'core' },
     { id: 'anime' as const, label: TYPE_LABELS.anime, icon: Tv, type: 'media' },
     { id: 'series' as const, label: TYPE_LABELS.series, icon: Clapperboard, type: 'media' },
     { id: 'movie' as const, label: TYPE_LABELS.movie, icon: Film, type: 'media' },

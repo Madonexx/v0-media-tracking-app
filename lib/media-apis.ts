@@ -105,6 +105,86 @@ export async function searchMedia(query: string, type: string): Promise<SearchRe
   }
 }
 
+// Fetch trending/top items for the catalog
+export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
+  try {
+    if (type === 'anime') {
+      const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=12')
+      if (!response.ok) throw new Error('Jikan API error')
+      const data = await response.json()
+      return data.data?.map((item: any) => ({
+        id: `mal-${item.mal_id}`,
+        title: item.title,
+        image_url: item.images?.jpg?.large_image_url || item.images?.jpg?.image_url || null,
+        year: item.year?.toString() || item.aired?.from?.slice(0, 4) || null,
+        genres: item.genres?.map((g: any) => g.name) || [],
+        synopsis: item.synopsis?.slice(0, 200) || null,
+        score: item.score ? Math.round(item.score) : null,
+        status: mapAnimeStatus(item.status),
+        episodes: item.episodes || null
+      })) || []
+    }
+
+    if (type === 'book') {
+      const response = await fetch('https://openlibrary.org/trending/daily.json?limit=12')
+      if (!response.ok) throw new Error('Open Library API error')
+      const data = await response.json()
+      return data.works?.slice(0, 12).map((item: any) => ({
+        id: `ol-${item.key.split('/').pop()}`,
+        title: item.title,
+        image_url: item.cover_i 
+          ? `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg`
+          : null,
+        year: item.first_publish_year?.toString() || null,
+        genres: [],
+        synopsis: null,
+        score: null,
+        status: 'terminado',
+        author: item.author_name?.join(', ') || null
+      })) || []
+    }
+
+    // Static curated lists for types without free APIs
+    if (type === 'movie') {
+      return [
+        { id: 'm1', title: 'The Dark Knight', year: '2008', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDp9EXm7FbmZkG9v96A.jpg', status: 'terminado', genres: ['Acción', 'Crimen'] },
+        { id: 'm2', title: 'Inception', year: '2010', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/edv5CZvfkjSnsOefv9YCc7Yojha.jpg', status: 'terminado', genres: ['Sci-Fi', 'Acción'] },
+        { id: 'm3', title: 'Spiderman: Into the Spiderverse', year: '2018', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/iiZZmzguMTvH2adTL4bS7qYtUfS.jpg', status: 'terminado', genres: ['Animación', 'Aventura'] },
+        { id: 'm4', title: 'Pulp Fiction', year: '1994', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/d5iIl9h9btztm9kzccuTh7ogYvA.jpg', status: 'terminado', genres: ['Crimen', 'Drama'] },
+        { id: 'm5', title: 'Interstellar', year: '2014', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlSaba7.jpg', status: 'terminado', genres: ['Sci-Fi', 'Drama'] },
+        { id: 'm6', title: 'The Godfather', year: '1972', score: 10, image_url: 'https://image.tmdb.org/t/p/w500/3bhkrj9brv4FvBSv9pST99WpYQ7.jpg', status: 'terminado', genres: ['Crimen', 'Drama'] },
+      ]
+    }
+
+    if (type === 'series') {
+      return [
+        { id: 's1', title: 'Breaking Bad', year: '2008', score: 10, image_url: 'https://image.tmdb.org/t/p/w500/ggm8bbub6o97vUZY7CjhqnPaTFl.jpg', status: 'terminado', genres: ['Drama', 'Crimen'] },
+        { id: 's2', title: 'The Last of Us', year: '2023', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/uKvH56B29db70Y1pDqsds6A77p2.jpg', status: 'terminado', genres: ['Drama', 'Acción'] },
+        { id: 's3', title: 'Stranger Things', year: '2016', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/49WpIv1r32qfkU5q4kaOJuLsQH.jpg', status: 'saliendo', genres: ['Sci-Fi', 'Misterio'] },
+        { id: 's4', title: 'Better Call Saul', year: '2015', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/fC2SzyUBkyj9vS79tYnWoU7v9Xy.jpg', status: 'terminado', genres: ['Drama', 'Crimen'] },
+        { id: 's5', title: 'Succession', year: '2018', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/7Yis9S9O06u9L8v6Ovy9Yf9M8yY.jpg', status: 'terminado', genres: ['Drama'] },
+        { id: 's6', title: 'Dark', year: '2017', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/apbr08kOTmdf9G66p2H2p9p66V1.jpg', status: 'terminado', genres: ['Sci-Fi', 'Misterio'] },
+      ]
+    }
+
+    if (type === 'game') {
+      return [
+        { id: 'g1', title: 'Elden Ring', year: '2022', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co4ksi.jpg', status: 'terminado', genres: ['RPG', 'Acción'] },
+        { id: 'g2', title: 'The Legend of Zelda: Tears of the Kingdom', year: '2023', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5v6v.jpg', status: 'terminado', genres: ['Aventura', 'Acción'] },
+        { id: 'g3', title: 'Baldur\'s Gate 3', year: '2023', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co670h.jpg', status: 'terminado', genres: ['RPG', 'Estrategia'] },
+        { id: 'g4', title: 'God of War Ragnarök', year: '2022', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
+        { id: 'g5', title: 'Cyberpunk 2077', year: '2020', score: 8, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2mdf.jpg', status: 'terminado', genres: ['RPG', 'Acción'] },
+        { id: 'g6', title: 'Hades', year: '2020', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Acción', 'Indie'] },
+      ]
+    }
+
+    return []
+  } catch (error) {
+    console.error(`Error getting trending ${type}:`, error)
+    return []
+  }
+}
+
 // Check if a media type supports API search
 export function supportsApiSearch(type: string): boolean {
   return ['anime', 'book'].includes(type)
