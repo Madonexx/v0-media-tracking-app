@@ -109,7 +109,8 @@ export async function searchMedia(query: string, type: string): Promise<SearchRe
 export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
   try {
     if (type === 'anime') {
-      const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=50')
+      // Pedimos 100 para tener un margen de filtrado muy amplio
+      const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=100')
       if (!response.ok) throw new Error('Jikan API error')
       const data = await response.json()
       return data.data?.map((item: any) => ({
@@ -126,7 +127,7 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
     }
 
     if (type === 'book') {
-      const response = await fetch('https://openlibrary.org/trending/daily.json?limit=50')
+      const response = await fetch('https://openlibrary.org/trending/daily.json?limit=100')
       if (!response.ok) throw new Error('Open Library API error')
       const data = await response.json()
       return data.works?.map((item: any) => ({
@@ -144,7 +145,7 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
       })) || []
     }
 
-    // Static curated lists for types without free APIs
+    // Listas ampliadas para tipos sin APIs gratuitas
     if (type === 'movie') {
       return [
         { id: 'm1', title: 'The Dark Knight', year: '2008', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDp9EXm7FbmZkG9v96A.jpg', status: 'terminado', genres: ['Acción', 'Crimen'] },
@@ -159,6 +160,18 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
         { id: 'm10', title: 'The Shawshank Redemption', year: '1994', score: 10, image_url: 'https://image.tmdb.org/t/p/w500/95S6sXG07Yp6MJsSKHTv9Y9D0sx.jpg', status: 'terminado', genres: ['Drama'] },
         { id: 'm11', title: 'Dune: Part Two', year: '2024', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/8bBihcbzqS5akAdLv99YICZth9n.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
         { id: 'm12', title: 'Everything Everywhere All at Once', year: '2022', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/rKvCysSko4Yp3Z6wn7hs6p6YtPc.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
+        { id: 'm13', title: 'The Prestige', year: '2006', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/bdN3g8E5p0rkL99S67UMm89Uo9B.jpg', status: 'terminado', genres: ['Drama', 'Misterio'] },
+        { id: 'm14', title: 'Parasite', year: '2019', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/7IiTTjSFeSbbX7ST9ExW0YpS72n.jpg', status: 'terminado', genres: ['Comedia', 'Drama', 'Thriller'] },
+        { id: 'm15', title: 'Whiplash', year: '2014', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Drama', 'Música'] },
+        { id: 'm16', title: 'Inglourious Basterds', year: '2009', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Acción', 'Guerra'] },
+        { id: 'm17', title: 'Mad Max: Fury Road', year: '2015', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/h6rsS6Y3fUvC93AK9JaEV9967S7.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
+        { id: 'm18', title: 'The Wolf of Wall Street', year: '2013', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/p7S6S0UQ49SSTpXN9C9P9P9P9P9.jpg', status: 'terminado', genres: ['Biografía', 'Comedia'] },
+        { id: 'm19', title: 'Joker', year: '2019', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/udDclKVXv9qOXCtWg8krS9mFJtq.jpg', status: 'terminado', genres: ['Crimen', 'Drama'] },
+        { id: 'm20', title: 'Arrival', year: '2016', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/x89U3Y9L92MDmwsXoWCcEbYqY9G.jpg', status: 'terminado', genres: ['Sci-Fi', 'Drama'] },
+        { id: 'm21', title: 'The Truman Show', year: '1998', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Comedia', 'Drama'] },
+        { id: 'm22', title: 'Goodfellas', year: '1990', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Crimen', 'Drama'] },
+        { id: 'm23', title: 'Se7en', year: '1995', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Crimen', 'Misterio'] },
+        { id: 'm24', title: 'Blade Runner 2049', year: '2017', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Sci-Fi', 'Drama'] },
       ]
     }
 
@@ -176,6 +189,18 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
         { id: 's10', title: 'House of the Dragon', year: '2022', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/7reM6U3Y6251fW2S9P6VlM7D3vS.jpg', status: 'saliendo', genres: ['Sci-Fi', 'Aventura'] },
         { id: 's11', title: 'Sherlock', year: '2010', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Crimen', 'Drama'] },
         { id: 's12', title: 'The Crown', year: '2016', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/r07O0S3N5X4jD4U1A4R4kR8Y4Y4.jpg', status: 'terminado', genres: ['Drama', 'Historia'] },
+        { id: 's13', title: 'Game of Thrones', year: '2011', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Fantasía', 'Drama'] },
+        { id: 's14', title: 'The Office', year: '2005', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Comedia'] },
+        { id: 's15', title: 'Peaky Blinders', year: '2013', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Drama', 'Crimen'] },
+        { id: 's16', title: 'Black Mirror', year: '2011', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'saliendo', genres: ['Sci-Fi', 'Antología'] },
+        { id: 's17', title: 'The Mandalorian', year: '2019', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'saliendo', genres: ['Acción', 'Sci-Fi'] },
+        { id: 's18', title: 'Ted Lasso', year: '2020', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Comedia', 'Deportes'] },
+        { id: 's19', title: 'Fleabag', year: '2016', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Comedia', 'Drama'] },
+        { id: 's20', title: 'Mindhunter', year: '2017', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'cancelado', genres: ['Crimen', 'Drama'] },
+        { id: 's21', title: 'Severance', year: '2022', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'saliendo', genres: ['Thriller', 'Sci-Fi'] },
+        { id: 's22', title: 'The White Lotus', year: '2021', score: 8, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'saliendo', genres: ['Comedia', 'Drama'] },
+        { id: 's23', title: 'Shogun', year: '2024', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Drama', 'Historia'] },
+        { id: 's24', title: 'The Sopranos', year: '1999', score: 9, image_url: 'https://image.tmdb.org/t/p/w500/799696o82Y0p9kR0i9S6WlZ0p9k.jpg', status: 'terminado', genres: ['Crimen', 'Drama'] },
       ]
     }
 
@@ -193,8 +218,27 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
         { id: 'g10', title: 'Ghost of Tsushima', year: '2020', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
         { id: 'g11', title: 'Sekiro: Shadows Die Twice', year: '2019', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1vcp.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
         { id: 'g12', title: 'Final Fantasy VII Rebirth', year: '2024', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co7idk.jpg', status: 'terminado', genres: ['RPG', 'Acción'] },
+        { id: 'g13', title: 'Grand Theft Auto V', year: '2013', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg', status: 'terminado', genres: ['Acción'] },
+        { id: 'g14', title: 'Mass Effect Legendary Edition', year: '2021', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2mdf.jpg', status: 'terminado', genres: ['RPG', 'Sci-Fi'] },
+        { id: 'g15', title: 'Dark Souls III', year: '2016', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2mdf.jpg', status: 'terminado', genres: ['RPG', 'Acción'] },
+        { id: 'g16', title: 'Resident Evil 4 Remake', year: '2023', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co64nd.jpg', status: 'terminado', genres: ['Horror', 'Acción'] },
+        { id: 'g17', title: 'Outer Wilds', year: '2019', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Exploración', 'Indie'] },
+        { id: 'g18', title: 'Hollow Knight', year: '2017', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Metroidvania', 'Indie'] },
+        { id: 'g19', title: 'Bloodborne', year: '2015', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg', status: 'terminado', genres: ['Acción', 'RPG'] },
+        { id: 'g20', title: 'Disco Elysium', year: '2019', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['RPG'] },
+        { id: 'g21', title: 'Minecraft', year: '2011', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Sandbox'] },
+        { id: 'g22', title: 'Stardew Valley', year: '2016', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Simulación', 'Indie'] },
+        { id: 'g23', title: 'Helldivers 2', year: '2024', score: 8, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co7idk.jpg', status: 'saliendo', genres: ['Acción', 'Shooter'] },
+        { id: 'g24', title: 'God of War (2018)', year: '2018', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg', status: 'terminado', genres: ['Acción', 'Aventura'] },
       ]
     }
+
+    return []
+  } catch (error) {
+    console.error(`Error getting trending ${type}:`, error)
+    return []
+  }
+}
 
     return []
   } catch (error) {
