@@ -30,13 +30,15 @@ import {
   CONTENT_STATUS_LABELS,
   USER_PROGRESS_LABELS,
   getMediaProgressLabel,
-  getMediaUnitLabel
+  getMediaUnitLabel,
+  STREAMING_PLATFORMS,
+  StreamingPlatform
 } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
 import { StarRating } from './star-rating'
 import { cn } from '@/lib/utils'
-import { Trophy } from 'lucide-react'
+import { Trophy, Tv, Info } from 'lucide-react'
 
 interface AddMediaDialogProps {
   open: boolean
@@ -64,6 +66,9 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
     last_episode: source?.last_episode || '',
     current_progress: source?.current_progress || 0,
     total_progress: source?.total_progress || null,
+    platform: source?.platform || null,
+    current_season: source?.current_season || null,
+    total_seasons: source?.total_seasons || null,
     is_platinum: source?.is_platinum || false,
     notes: source?.notes || '',
     image_url: source?.image_url || ''
@@ -85,6 +90,9 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         last_episode: newSource.last_episode || '',
         current_progress: newSource.current_progress || 0,
         total_progress: newSource.total_progress || null,
+        platform: newSource.platform || null,
+        current_season: newSource.current_season || null,
+        total_seasons: newSource.total_seasons || null,
         is_platinum: newSource.is_platinum || false,
         notes: newSource.notes || '',
         image_url: newSource.image_url || ''
@@ -124,6 +132,9 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       last_episode: formData.last_episode || null,
       current_progress: Number(formData.current_progress) || 0,
       total_progress: formData.total_progress ? Number(formData.total_progress) : null,
+      platform: formData.platform || null,
+      current_season: formData.current_season ? Number(formData.current_season) : null,
+      total_seasons: formData.total_seasons ? Number(formData.total_seasons) : null,
       is_platinum: !!formData.is_platinum,
       notes: formData.notes || null,
       image_url: formData.image_url || null,
@@ -152,6 +163,9 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
       delete compatibilityData.current_progress
       delete compatibilityData.total_progress
       delete compatibilityData.is_platinum
+      delete compatibilityData.platform
+      delete compatibilityData.current_season
+      delete compatibilityData.total_seasons
       
       if (editItem) {
         result = await supabase.from('media_items').update(compatibilityData).eq('id', editItem.id)
@@ -184,6 +198,9 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
         last_episode: '',
         current_progress: 0,
         total_progress: null,
+        platform: null,
+        current_season: null,
+        total_seasons: null,
         is_platinum: false,
         notes: '',
         image_url: ''
@@ -192,6 +209,8 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
   }
 
   const isMovie = formData.type === 'movie'
+  const isSeries = formData.type === 'series'
+  const isAnime = formData.type === 'anime'
   const isBook = formData.type === 'book'
   const isGame = formData.type === 'game'
   const isTypeFixed = !editItem // Hide type selector when adding new (implied by context)
@@ -264,6 +283,29 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
             </div>
           </div>
 
+          {/* Section: Platforms (For Movies and Series) */}
+          {(isMovie || isSeries || isAnime) && (
+            <div className="space-y-2">
+              <Label htmlFor="platform" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                ¿Dónde está?
+              </Label>
+              <Select
+                value={formData.platform || 'none'}
+                onValueChange={(value) => setFormData({ ...formData, platform: value === 'none' ? null : value as StreamingPlatform })}
+              >
+                <SelectTrigger className="border-border h-10">
+                  <SelectValue placeholder="Selecciona plataforma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No especificado</SelectItem>
+                  {Object.entries(STREAMING_PLATFORMS).map(([value, { label }]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Section 2: Status & Progress (Conditional) */}
           <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-4">
             <Label className="text-xs uppercase tracking-wider text-primary font-bold">
@@ -291,6 +333,37 @@ export function AddMediaDialog({ open, onOpenChange, onSuccess, editItem, prefil
             ) : (
               // ANIME/SERIES/BOOKS/GAMES VIEW: Full tracking
               <div className="space-y-4">
+                {isSeries && (
+                  <div className="grid grid-cols-2 gap-4 bg-background/40 p-3 rounded-lg border border-primary/20">
+                     <div className="space-y-1.5">
+                        <Label htmlFor="current_season" className="text-[10px] font-bold flex items-center gap-1">
+                          <Tv className="w-3 h-3" /> TEMPORADA ACTUAL
+                        </Label>
+                        <Input
+                          id="current_season"
+                          type="number"
+                          min="1"
+                          value={formData.current_season || ''}
+                          onChange={(e) => setFormData({ ...formData, current_season: parseInt(e.target.value) || null })}
+                          placeholder="Ej: 1"
+                          className="h-8 text-xs border-border focus:border-primary"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="total_seasons" className="text-[10px] font-bold text-muted-foreground">TOTAL TEMP.</Label>
+                        <Input
+                          id="total_seasons"
+                          type="number"
+                          min="1"
+                          value={formData.total_seasons || ''}
+                          onChange={(e) => setFormData({ ...formData, total_seasons: e.target.value ? parseInt(e.target.value) : null })}
+                          placeholder="?"
+                          className="h-8 text-xs border-border focus:border-primary"
+                        />
+                      </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   {/* Content Status - Hide for books/games if preferred, but keeping it for emission info */}
                   <div className="space-y-2">

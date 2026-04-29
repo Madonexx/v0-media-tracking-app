@@ -16,9 +16,11 @@ import {
   TYPE_LABELS,
   MediaType,
   getMediaProgressLabel,
-  getMediaUnitLabel
+  getMediaUnitLabel,
+  STREAMING_PLATFORMS,
+  StreamingPlatform
 } from '@/lib/types'
-import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen, Plus, Trophy, Gamepad2 } from 'lucide-react'
+import { Star, Play, Pause, CheckCircle, Clock, X, MoreVertical, Pencil, Trash2, ImageIcon, Eye, BookOpen, Plus, Minus, Trophy, Gamepad2, Tv } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -38,6 +40,7 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
   const isMovie = item.type === 'movie'
   const isGame = item.type === 'game'
   const isBook = item.type === 'book'
+  const isSeries = item.type === 'series'
 
   const handleIncrement = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -66,6 +69,36 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
       setLocalProgress(localProgress)
     }
     setUpdating(false)
+  }
+
+  const handleDecrement = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (updating || readOnly || isMovie || localProgress <= 0) return
+    
+    setUpdating(true)
+    const nextProgress = localProgress - 1
+    setLocalProgress(nextProgress)
+
+    const updateData: any = {
+      current_progress: nextProgress,
+      updated_at: new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('media_items')
+      .update(updateData)
+      .eq('id', item.id)
+
+    if (error) {
+      console.error('Error updating progress:', error)
+      setLocalProgress(localProgress)
+    }
+    setUpdating(false)
+  }
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onDelete) onDelete(item)
   }
 
   const progressPercent = item.total_progress 
@@ -174,6 +207,21 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                   </Badge>
                 )}
                 
+                {item.platform && STREAMING_PLATFORMS[item.platform as StreamingPlatform] && (
+                  <Badge 
+                    className={cn('text-[8px] px-1.5 py-0 h-4 border-none leading-none font-bold uppercase', STREAMING_PLATFORMS[item.platform as StreamingPlatform].color)}
+                  >
+                    {STREAMING_PLATFORMS[item.platform as StreamingPlatform].label}
+                  </Badge>
+                )}
+
+                {(isSeries || item.type === 'anime') && item.current_season && (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-bold bg-muted/50 px-1.5 rounded h-4">
+                    <Tv className="w-2.5 h-2.5" />
+                    T{item.current_season}{item.total_seasons ? `/${item.total_seasons}` : ''}
+                  </div>
+                )}
+                
                 {item.score && (
                   <div className="flex items-center text-warning">
                     <Star className="w-3 h-3 fill-current mr-0.5" />
@@ -192,16 +240,31 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                       {item.total_progress ? ` / ${item.total_progress}` : ''}
                       {unitLabel && <span className="ml-0.5 opacity-70">{unitLabel}</span>}
                     </div>
-                    {!readOnly && item.user_progress !== 'completado' && (
-                      <Button 
-                        size="icon" 
-                        variant="outline" 
-                        className="h-5 w-5 border-primary/30 text-primary hover:bg-primary hover:text-white"
-                        onClick={handleIncrement}
-                        disabled={updating}
-                      >
-                        <Plus className="h-2.5 w-2.5" />
-                      </Button>
+                    {!readOnly && (
+                      <div className="flex items-center gap-1">
+                        {localProgress > 0 && (
+                          <Button 
+                            size="icon" 
+                            variant="outline" 
+                            className="h-5 w-5 border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                            onClick={handleDecrement}
+                            disabled={updating}
+                          >
+                            <Minus className="h-2.5 w-2.5" />
+                          </Button>
+                        )}
+                        {item.user_progress !== 'completado' && (
+                          <Button 
+                            size="icon" 
+                            variant="outline" 
+                            className="h-5 w-5 border-primary/30 text-primary hover:bg-primary hover:text-white"
+                            onClick={handleIncrement}
+                            disabled={updating}
+                          >
+                            <Plus className="h-2.5 w-2.5" />
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                   {item.total_progress && (
@@ -209,13 +272,32 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                   )}
                 </div>
               )}
+              
+              {isMovie && item.platform && !item.score && (
+                <div className="mt-4 flex items-center gap-2">
+                   <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      Disponible en <span className="text-foreground font-bold">{STREAMING_PLATFORMS[item.platform as StreamingPlatform].label}</span>
+                   </div>
+                </div>
+              )}
             </div>
             
-            <div className="mt-1">
-              {item.notes && (
+            <div className="mt-1 flex items-center justify-between">
+              {item.notes ? (
                 <p className="text-[10px] text-muted-foreground/80 line-clamp-1 italic">
                   {item.notes}
                 </p>
+              ) : <div></div>}
+              
+              {!readOnly && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               )}
             </div>
           </div>

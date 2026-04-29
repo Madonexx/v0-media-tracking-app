@@ -16,6 +16,8 @@ export interface Profile {
   updated_at: string
 }
 
+export type StreamingPlatform = 'netflix' | 'amazon_prime' | 'disney_plus' | 'hbo_max' | 'paramount_plus' | 'apple_tv' | 'other'
+
 export interface MediaItem {
   id: string
   title: string
@@ -29,11 +31,24 @@ export interface MediaItem {
   last_episode: string | null
   current_progress: number
   total_progress: number | null
+  platform?: StreamingPlatform | null
+  current_season?: number | null
+  total_seasons?: number | null
   is_platinum?: boolean
   notes: string | null
   image_url: string | null
   created_at: string
   updated_at: string
+}
+
+export const STREAMING_PLATFORMS: Record<StreamingPlatform, { label: string, color: string }> = {
+  netflix: { label: 'Netflix', color: 'bg-red-600 text-white' },
+  amazon_prime: { label: 'Amazon Prime', color: 'bg-blue-500 text-white' },
+  disney_plus: { label: 'Disney+', color: 'bg-blue-900 text-white' },
+  hbo_max: { label: 'HBO Max', color: 'bg-indigo-700 text-white' },
+  paramount_plus: { label: 'Paramount+', color: 'bg-blue-600 text-white' },
+  apple_tv: { label: 'Apple TV', color: 'bg-gray-800 text-white' },
+  other: { label: 'Otro', color: 'bg-gray-500 text-white' }
 }
 
 export interface Achievement {
