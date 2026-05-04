@@ -137,6 +137,49 @@ function mapAnimeStatus(status: string | null): string {
   return statusMap[status] || 'no_empezado'
 }
 
+// TVMaze API for Series
+export async function searchSeries(query: string): Promise<SearchResult[]> {
+  if (!query || query.length < 2) return []
+  
+  try {
+    const response = await fetch(
+      `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`
+    )
+    
+    if (!response.ok) throw new Error('TVMaze API error')
+    
+    const data = await response.json()
+    
+    return data?.map((result: any) => {
+      const item = result.show
+      return {
+        id: `tvmaze-${item.id}`,
+        title: item.name,
+        image_url: item.image?.original || item.image?.medium || null,
+        year: item.premiered?.slice(0, 4) || null,
+        genres: item.genres || [],
+        synopsis: item.summary?.replace(/<[^>]*>?/gm, '').slice(0, 300) || null,
+        score: item.rating?.average ? Math.round(item.rating.average) : null,
+        status: mapSeriesStatus(item.status)
+      }
+    }) || []
+  } catch (error) {
+    console.error('Error searching series:', error)
+    return []
+  }
+}
+
+function mapSeriesStatus(status: string | null): string {
+  if (!status) return 'no_empezado'
+  const statusMap: Record<string, string> = {
+    'Ended': 'terminado',
+    'Running': 'saliendo',
+    'To Be Determined': 'en_espera',
+    'In Development': 'no_empezado'
+  }
+  return statusMap[status] || 'no_empezado'
+}
+
 // Open Library API for Books
 export async function searchBooks(query: string): Promise<SearchResult[]> {
   if (!query || query.length < 2) return []
@@ -170,6 +213,43 @@ export async function searchBooks(query: string): Promise<SearchResult[]> {
   }
 }
 
+// OMDb API for Movies
+export async function searchMovies(query: string): Promise<SearchResult[]> {
+  if (!query || query.length < 2) return []
+  
+  const apiKey = process.env.NEXT_PUBLIC_OMDB_API_KEY
+  if (!apiKey) {
+    console.warn('OMDb API Key not found. Please set NEXT_PUBLIC_OMDB_API_KEY')
+    return []
+  }
+  
+  try {
+    const response = await fetch(
+      `https://www.omdbapi.com/?s=${encodeURIComponent(query)}&type=movie&apikey=${apiKey}`
+    )
+    
+    if (!response.ok) throw new Error('OMDb API error')
+    
+    const data = await response.json()
+    
+    if (data.Response === 'False') return []
+    
+    return data.Search?.map((item: any) => ({
+      id: `omdb-${item.imdbID}`,
+      title: item.Title,
+      image_url: item.Poster !== 'N/A' ? item.Poster : null,
+      year: item.Year || null,
+      genres: [],
+      synopsis: null,
+      score: null,
+      status: 'terminado'
+    })) || []
+  } catch (error) {
+    console.error('Error searching movies:', error)
+    return []
+  }
+}
+
 // Generic search that routes to the right API
 export async function searchMedia(query: string, type: string): Promise<SearchResult[]> {
   const normalizedQuery = query.toLowerCase()
@@ -180,31 +260,27 @@ export async function searchMedia(query: string, type: string): Promise<SearchRe
     item.genres.some(g => g.toLowerCase().includes(normalizedQuery))
   ) || []
 
+  let apiResults: SearchResult[] = []
+
   if (type === 'anime') {
-    const apiResults = await searchAnime(query)
-    // Combine and deduplicate by title
-    const combined = [...localResults, ...apiResults]
-    const seen = new Set()
-    return combined.filter(item => {
-      const duplicate = seen.has(item.title.toLowerCase())
-      seen.add(item.title.toLowerCase())
-      return !duplicate
-    })
+    apiResults = await searchAnime(query)
+  } else if (type === 'book') {
+    apiResults = await searchBooks(query)
+  } else if (type === 'series') {
+    apiResults = await searchSeries(query)
+  } else if (type === 'movie') {
+    apiResults = await searchMovies(query)
   }
 
-  if (type === 'book') {
-    const apiResults = await searchBooks(query)
-    const combined = [...localResults, ...apiResults]
-    const seen = new Set()
-    return combined.filter(item => {
-      const duplicate = seen.has(item.title.toLowerCase())
-      seen.add(item.title.toLowerCase())
-      return !duplicate
-    })
-  }
-
-  // For other types, return local results from amplified catalog
-  return localResults
+  // Combine and deduplicate by title
+  const combined = [...localResults, ...apiResults]
+  const seen = new Set()
+  return combined.filter(item => {
+    const titleLower = item.title.toLowerCase()
+    const duplicate = seen.has(titleLower)
+    seen.add(titleLower)
+    return !duplicate
+  })
 }
 
 // Fetch trending/top items for the catalog
@@ -246,6 +322,33 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
       })) || []
     }
 
+    if (type === 'series') {
+      // TVMaze doesn't have a direct "top" endpoint like Jikan, 
+      // but we can use their schedule or just fallback to catalog
+      const response = await fetch('https://api.tvmaze.com/schedule')
+      if (!response.ok) throw new Error('TVMaze API error')
+      const data = await response.json()
+      // Deduplicate shows from the schedule
+      const seen = new Set()
+      return data
+        .map((item: any) => item.show)
+        .filter((show: any) => {
+          if (seen.has(show.id)) return false
+          seen.add(show.id)
+          return true
+        })
+        .map((item: any) => ({
+          id: `tvmaze-${item.id}`,
+          title: item.name,
+          image_url: item.image?.original || item.image?.medium || null,
+          year: item.premiered?.slice(0, 4) || null,
+          genres: item.genres || [],
+          synopsis: item.summary?.replace(/<[^>]*>?/gm, '').slice(0, 200) || null,
+          score: item.rating?.average ? Math.round(item.rating.average) : null,
+          status: mapSeriesStatus(item.status)
+        })) || []
+    }
+
     // Return hardcoded amplified catalog data
     return CATALOG_DATA[type] || []
   } catch (error) {
@@ -256,15 +359,18 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
 
 // Check if a media type supports API search
 export function supportsApiSearch(type: string): boolean {
-  return ['anime', 'book'].includes(type)
+  if (type === 'movie') return !!process.env.NEXT_PUBLIC_OMDB_API_KEY
+  return ['anime', 'book', 'series'].includes(type)
 }
 
 export function getApiSearchMessage(type: string): string {
   const messages: Record<string, string> = {
     anime: 'Busca anime con datos de MyAnimeList',
     book: 'Busca libros con datos de Open Library',
-    movie: 'Agrega manualmente (API requiere key)',
-    series: 'Agrega manualmente (API requiere key)',
+    series: 'Busca series con datos de TVMaze',
+    movie: process.env.NEXT_PUBLIC_OMDB_API_KEY 
+      ? 'Busca películas con datos de OMDb' 
+      : 'Configura OMDb API Key para buscar películas',
     game: 'Agrega manualmente (API requiere key)'
   }
   return messages[type] || ''

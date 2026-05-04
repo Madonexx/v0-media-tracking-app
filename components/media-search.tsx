@@ -76,11 +76,8 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
     if (result.synopsis) noteParts.push(result.synopsis.slice(0, 200) + (result.synopsis.length > 200 ? '...' : ''))
     
     // Map API status to our content_status
-    // API returns: airing, finished, upcoming, unknown
-    let contentStatus: 'terminado' | 'saliendo' | 'en_espera' | 'no_empezado' = 'no_empezado'
-    if (result.status === 'finished') contentStatus = 'terminado'
-    else if (result.status === 'airing') contentStatus = 'saliendo'
-    else if (result.status === 'upcoming') contentStatus = 'en_espera'
+    // The API layer now returns our internal status strings
+    const contentStatus = (result.status || 'no_empezado') as any
     
     // Pass to parent to open edit dialog with pre-filled data
     onSelectItem({
