@@ -1,10 +1,10 @@
 export type MediaType = 'anime' | 'series' | 'movie' | 'book' | 'game'
 
 // Estado del contenido (si el anime/serie terminó de emitirse, está en emisión, etc.)
-export type ContentStatus = 'terminado' | 'saliendo' | 'en_espera' | 'cancelado' | 'no_empezado'
+export type ContentStatus = 'terminado' | 'saliendo' | 'en_espera' | 'esperando_temporada' | 'cancelado' | 'no_empezado'
 
 // Progreso del usuario (si vos lo terminaste de ver, lo estás viendo, etc.)
-export type UserProgress = 'completado' | 'viendo' | 'en_pausa' | 'abandonado' | 'pendiente'
+export type UserProgress = 'completado' | 'al_dia' | 'viendo' | 'en_pausa' | 'abandonado' | 'pendiente'
 
 export interface Profile {
   id: string
@@ -74,6 +74,7 @@ export const CONTENT_STATUS_LABELS: Record<ContentStatus, string> = {
   terminado: 'Finalizado',
   saliendo: 'En emisión',
   en_espera: 'Por estrenar',
+  esperando_temporada: 'Esperando nueva temporada',
   cancelado: 'Cancelado',
   no_empezado: 'Desconocido'
 }
@@ -81,6 +82,7 @@ export const CONTENT_STATUS_LABELS: Record<ContentStatus, string> = {
 // Labels for user progress (mi progreso)
 export const USER_PROGRESS_LABELS: Record<UserProgress, string> = {
   completado: 'Completado',
+  al_dia: 'Al día',
   viendo: 'Viendo',
   en_pausa: 'En pausa',
   abandonado: 'Abandonado',
@@ -100,6 +102,7 @@ export const CONTENT_STATUS_COLORS: Record<ContentStatus, string> = {
   terminado: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   saliendo: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   en_espera: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  esperando_temporada: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   cancelado: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
   no_empezado: 'bg-muted text-muted-foreground border-muted'
 }
@@ -107,6 +110,7 @@ export const CONTENT_STATUS_COLORS: Record<ContentStatus, string> = {
 // Colors for user progress (more prominent)
 export const USER_PROGRESS_COLORS: Record<UserProgress, string> = {
   completado: 'bg-success text-success-foreground',
+  al_dia: 'bg-emerald-600 text-white',
   viendo: 'bg-primary text-primary-foreground',
   en_pausa: 'bg-warning text-warning-foreground',
   abandonado: 'bg-destructive text-destructive-foreground',
@@ -116,6 +120,7 @@ export const USER_PROGRESS_COLORS: Record<UserProgress, string> = {
 // Border colors for card left accent (based on user progress)
 export const PROGRESS_BORDER_COLORS: Record<UserProgress, string> = {
   completado: 'border-l-success',
+  al_dia: 'border-l-emerald-500',
   viendo: 'border-l-primary',
   en_pausa: 'border-l-warning',
   abandonado: 'border-l-destructive',
@@ -164,6 +169,7 @@ export const getMediaActionLabel = (type: MediaType): string => {
 // Glow effects for user progress
 export const PROGRESS_GLOW: Record<UserProgress, string> = {
   completado: 'shadow-[0_0_10px_rgba(34,197,94,0.3)]',
+  al_dia: 'shadow-[0_0_10px_rgba(16,185,129,0.3)]',
   viendo: 'shadow-[0_0_10px_rgba(139,92,246,0.3)]',
   en_pausa: 'shadow-[0_0_10px_rgba(234,179,8,0.2)]',
   abandonado: '',

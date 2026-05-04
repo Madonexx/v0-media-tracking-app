@@ -53,14 +53,15 @@ export function MediaList({ items, type, onRefresh, readOnly = false, initialFil
     return matchesSearch && matchesProgress
   })
 
-  // Sort items: viendo first, then en_pausa, completado, pendiente, abandonado last
+  // Sort items: viendo first, then al_dia, en_pausa, completado, pendiente, abandonado last
   const sortedItems = [...filteredItems].sort((a, b) => {
     const order: Record<UserProgress, number> = {
       viendo: 0,
-      en_pausa: 1,
-      completado: 2,
-      pendiente: 3,
-      abandonado: 4
+      al_dia: 1,
+      en_pausa: 2,
+      completado: 3,
+      pendiente: 4,
+      abandonado: 5
     }
     return order[a.user_progress] - order[b.user_progress]
   })
