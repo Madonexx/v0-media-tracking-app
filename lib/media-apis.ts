@@ -61,6 +61,26 @@ export const CATALOG_DATA: Record<string, SearchResult[]> = {
     { id: 'g22', title: 'Stardew Valley', year: '2016', score: 9, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co29rx.jpg', status: 'terminado', genres: ['Simulación', 'Indie'], synopsis: 'You\'ve inherited your grandfather\'s old farm plot in Stardew Valley.' },
     { id: 'g23', title: 'Helldivers 2', year: '2024', score: 8, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co7idk.jpg', status: 'saliendo', genres: ['Acción', 'Shooter'], synopsis: 'Join the Helldivers and fight for freedom across a hostile galaxy.' },
     { id: 'g24', title: 'God of War (2018)', year: '2018', score: 10, image_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg', status: 'terminado', genres: ['Acción', 'Aventura'], synopsis: 'Living as a man outside the shadow of the gods.' },
+  ],
+  anime: [
+    { id: 'a1', title: 'Death Note', year: '2006', score: 9, image_url: 'https://cdn.myanimelist.net/images/anime/9/9453.jpg', status: 'terminado', genres: ['Misterio', 'Sobrenatural'], synopsis: 'Un estudiante encuentra un cuaderno que mata a quienes tienen su nombre escrito.' },
+    { id: 'a2', title: 'Attack on Titan', year: '2013', score: 9, image_url: 'https://cdn.myanimelist.net/images/anime/10/47347.jpg', status: 'terminado', genres: ['Acción', 'Drama'], synopsis: 'La humanidad lucha por sobrevivir contra gigantes caníbales.' },
+    { id: 'a3', title: 'Fullmetal Alchemist: Brotherhood', year: '2009', score: 10, image_url: 'https://cdn.myanimelist.net/images/anime/1223/96541.jpg', status: 'terminado', genres: ['Acción', 'Aventura'], synopsis: 'Dos hermanos buscan la piedra filosofal para recuperar sus cuerpos.' },
+    { id: 'a4', title: 'One Piece', year: '1999', score: 9, image_url: 'https://cdn.myanimelist.net/images/anime/6/73245.jpg', status: 'saliendo', genres: ['Acción', 'Aventura'], synopsis: 'Monkey D. Luffy busca convertirse en el Rey de los Piratas.' },
+    { id: 'a5', title: 'Jujutsu Kaisen', year: '2020', score: 9, image_url: 'https://cdn.myanimelist.net/images/anime/1127/113977.jpg', status: 'terminado', genres: ['Acción', 'Sobrenatural'], synopsis: 'Un estudiante se une a una organización de hechiceros para combatir maldiciones.' },
+    { id: 'a6', title: 'Demon Slayer', year: '2019', score: 9, image_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg', status: 'terminado', genres: ['Acción', 'Fantasía'], synopsis: 'Tanjiro busca una cura para su hermana convertida en demonio.' },
+    { id: 'a7', title: 'Frieren: Beyond Journey\'s End', year: '2023', score: 10, image_url: 'https://cdn.myanimelist.net/images/anime/1015/138062.jpg', status: 'terminado', genres: ['Aventura', 'Fantasía'], synopsis: 'Una elfa inmortal reflexiona sobre la vida después de su gran aventura.' },
+    { id: 'a8', title: 'Naruto Shippuden', year: '2007', score: 8, image_url: 'https://cdn.myanimelist.net/images/anime/5/17407.jpg', status: 'terminado', genres: ['Acción', 'Aventura'], synopsis: 'Naruto continúa su camino para convertirse en Hokage.' },
+  ],
+  book: [
+    { id: 'b1', title: 'The Great Gatsby', year: '1925', score: 8, image_url: 'https://covers.openlibrary.org/b/id/8231856-L.jpg', status: 'terminado', genres: ['Clásico', 'Ficción'], synopsis: 'A story of wealth, love, and the American Dream in the 1920s.' },
+    { id: 'b2', title: '1984', year: '1949', score: 9, image_url: 'https://covers.openlibrary.org/b/id/12643818-L.jpg', status: 'terminado', genres: ['Distopía', 'Sci-Fi'], synopsis: 'A chilling look at a totalitarian future where Big Brother is always watching.' },
+    { id: 'b3', title: 'Harry Potter and the Philosopher\'s Stone', year: '1997', score: 9, image_url: 'https://covers.openlibrary.org/b/id/10521270-L.jpg', status: 'terminado', genres: ['Fantasía', 'Aventura'], synopsis: 'A young boy discovers he is a wizard and begins his education at Hogwarts.' },
+    { id: 'b4', title: 'The Hobbit', year: '1937', score: 9, image_url: 'https://covers.openlibrary.org/b/id/8406786-L.jpg', status: 'terminado', genres: ['Fantasía', 'Aventura'], synopsis: 'Bilbo Baggins is swept into an epic quest to reclaim the Lonely Mountain.' },
+    { id: 'b5', title: 'To Kill a Mockingbird', year: '1960', score: 9, image_url: 'https://covers.openlibrary.org/b/id/8225266-L.jpg', status: 'terminado', genres: ['Clásico', 'Drama'], synopsis: 'A story of racial injustice and the loss of innocence in the American South.' },
+    { id: 'b6', title: 'The Catcher in the Rye', year: '1951', score: 7, image_url: 'https://covers.openlibrary.org/b/id/8231991-L.jpg', status: 'terminado', genres: ['Clásico', 'Ficción'], synopsis: 'Holden Caulfield navigates the complexities of teenage angst and alienation.' },
+    { id: 'b7', title: 'Pride and Prejudice', year: '1813', score: 9, image_url: 'https://covers.openlibrary.org/b/id/12711617-L.jpg', status: 'terminado', genres: ['Clásico', 'Romance'], synopsis: 'The sparkling story of Elizabeth Bennet and Mr. Darcy.' },
+    { id: 'b8', title: 'The Lord of the Rings', year: '1954', score: 10, image_url: 'https://covers.openlibrary.org/b/id/8233362-L.jpg', status: 'terminado', genres: ['Fantasía', 'Aventura'], synopsis: 'An epic quest to destroy the One Ring and defeat the Dark Lord Sauron.' },
   ]
 }
 
@@ -154,7 +174,7 @@ export async function searchBooks(query: string): Promise<SearchResult[]> {
   
   try {
     const response = await fetch(
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=10&fields=key,title,author_name,first_publish_year,cover_i,subject,number_of_pages_median`
+      `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=10&fields=key,title,author_name,author_names,first_publish_year,cover_i,subject,number_of_pages_median`
     )
     
     if (!response.ok) throw new Error('Open Library API error')
@@ -162,7 +182,7 @@ export async function searchBooks(query: string): Promise<SearchResult[]> {
     const data = await response.json()
     
     return data.docs?.map((item: any) => ({
-      id: `ol-${item.key}`,
+      id: `ol-${item.key.replace('/works/', '')}`,
       title: item.title,
       image_url: item.cover_i 
         ? `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg`
@@ -173,7 +193,7 @@ export async function searchBooks(query: string): Promise<SearchResult[]> {
       score: null,
       status: 'terminado',
       chapters: item.number_of_pages_median || null,
-      author: item.author_name?.join(', ') || null
+      author: item.author_name?.join(', ') || item.author_names?.join(', ') || null
     })) || []
   } catch (error) {
     console.error('Error searching books:', error)
@@ -255,14 +275,14 @@ export async function searchMedia(query: string, type: string): Promise<SearchRe
 export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
   try {
     if (type === 'anime') {
-      const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=100')
+      const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=20')
       if (!response.ok) throw new Error('Jikan API error')
       const data = await response.json()
       return data.data?.map((item: any) => ({
         id: `mal-${item.mal_id}`,
         title: item.title,
         image_url: item.images?.jpg?.large_image_url || item.images?.jpg?.image_url || null,
-        year: item.year?.toString() || item.aired?.from?.slice(0, 4) || null,
+        year: item.year?.toString() || (item.aired?.from ? item.aired.from.slice(0, 4) : null),
         genres: item.genres?.map((g: any) => g.name) || [],
         synopsis: item.synopsis?.slice(0, 200) || null,
         score: item.score ? Math.round(item.score) : null,
@@ -272,11 +292,11 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
     }
 
     if (type === 'book') {
-      const response = await fetch('https://openlibrary.org/trending/daily.json?limit=100')
+      const response = await fetch('https://openlibrary.org/trending/daily.json?limit=20')
       if (!response.ok) throw new Error('Open Library API error')
       const data = await response.json()
       return data.works?.map((item: any) => ({
-        id: `ol-${item.key.split('/').pop()}`,
+        id: `ol-${item.key.replace('/works/', '')}`,
         title: item.title,
         image_url: item.cover_i 
           ? `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg`
@@ -286,7 +306,7 @@ export async function getTrendingMedia(type: string): Promise<SearchResult[]> {
         synopsis: null,
         score: null,
         status: 'terminado',
-        author: item.author_name?.join(', ') || null
+        author: item.author_name?.join(', ') || item.author_names?.join(', ') || null
       })) || []
     }
 
