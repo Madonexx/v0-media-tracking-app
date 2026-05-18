@@ -86,6 +86,28 @@ export default function Home() {
         case 'count_up_to_date':
           shouldUnlock = currentItems.filter(i => i.is_up_to_date).length >= (condition.count as number)
           break
+        case 'franchise':
+          const franchiseName = (condition.name as string).toLowerCase()
+          const franchiseItems = currentItems.filter(i => 
+            i.title.toLowerCase().includes(franchiseName) && 
+            i.user_progress === 'completado'
+          )
+          // For franchises, we might want a specific count or just "all found"
+          // Let's assume the condition has a 'count' or we just check if it's > 0
+          const requiredCount = (condition.count as number) || 1
+          shouldUnlock = franchiseItems.length >= requiredCount
+          break
+        case 'genre':
+          const genreName = (condition.name as string).toLowerCase()
+          const genreItems = currentItems.filter(i => 
+            i.notes?.toLowerCase().includes(genreName) && // Genres are often stored in notes/synopsis in this app
+            i.user_progress === 'completado'
+          )
+          shouldUnlock = genreItems.length >= (condition.count as number)
+          break
+        case 'platinum_count':
+          shouldUnlock = currentItems.filter(i => i.is_platinum).length >= (condition.count as number)
+          break
       }
       
       if (shouldUnlock) {
