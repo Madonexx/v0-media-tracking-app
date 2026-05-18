@@ -11,6 +11,7 @@ import { Plus, Star, Sparkles, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { AddMediaDialog } from './add-media-dialog'
 
 interface MediaCatalogProps {
   onAddSuccess: () => void
@@ -22,6 +23,8 @@ export function MediaCatalog({ onAddSuccess, existingItems }: MediaCatalogProps)
   const [items, setItems] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(true)
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [prefillData, setPrefillData] = useState<Partial<MediaItem> | null>(null)
 
   const existingTitles = new Set(existingItems.map(i => i.title.toLowerCase()))
 
@@ -41,37 +44,18 @@ export function MediaCatalog({ onAddSuccess, existingItems }: MediaCatalogProps)
     loadTrending()
   }, [activeType, existingItems])
 
-  const handleAdd = async (item: SearchResult) => {
-    setAddingId(item.id)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      toast.error('Debes iniciar sesión')
-      setAddingId(null)
-      return
-    }
-
-    const { error } = await supabase.from('media_items').insert({
-      user_id: user.id,
+  const handleSelectItem = (item: SearchResult) => {
+    setPrefillData({
       title: item.title,
       type: activeType,
       image_url: item.image_url,
-      content_status: item.status || 'no_empezado',
+      content_status: (item.status || 'no_empezado') as any,
       user_progress: 'pendiente',
       score: item.score,
       notes: item.synopsis,
       total_progress: item.episodes || item.chapters || null,
-      updated_at: new Date().toISOString()
     })
-
-    if (error) {
-      toast.error('Error al agregar: ' + error.message)
-    } else {
-      toast.success(`${item.title} agregado a tu biblioteca`)
-      onAddSuccess()
-    }
-    setAddingId(null)
+    setDialogOpen(true)
   }
 
   return (
@@ -114,13 +98,20 @@ export function MediaCatalog({ onAddSuccess, existingItems }: MediaCatalogProps)
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((item) => (
-            <Card key={item.id} className="group overflow-hidden border-2 hover:border-primary/40 transition-all flex flex-col h-full">
+            <Card 
+              key={item.id} 
+              onClick={() => handleSelectItem(item)}
+              className="group overflow-hidden border-2 hover:border-primary/40 transition-all flex flex-col h-full cursor-pointer relative"
+            >
               <div className="aspect-[2/3] relative bg-muted overflow-hidden">
                 {item.image_url ? (
                   <img 
                     src={item.image_url} 
                     alt={item.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://placehold.co/400x600/1e293b/white?text=Sin+Imagen'
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">
@@ -133,33 +124,28 @@ export function MediaCatalog({ onAddSuccess, existingItems }: MediaCatalogProps)
                     <span className="text-xs font-bold">{item.score}</span>
                   </div>
                 )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="bg-primary text-primary-foreground rounded-full p-3 scale-75 group-hover:scale-100 transition-transform">
+                    <Plus className="w-6 h-6" />
+                  </div>
+                </div>
               </div>
-              <CardContent className="p-3 flex flex-col flex-1 justify-between">
-                <div>
-                  <h3 className="font-bold text-sm line-clamp-2 leading-tight mb-1">{item.title}</h3>
-                  <p className="text-[10px] text-muted-foreground">{item.year || 'Año desconocido'}</p>
-                </div>
-                
-                <div className="mt-3">
-                  <Button 
-                    onClick={() => handleAdd(item)} 
-                    disabled={addingId === item.id}
-                    variant="default" 
-                    className="w-full h-8 text-xs gap-1 glow-primary"
-                  >
-                    {addingId === item.id ? (
-                      <Spinner className="w-3 h-3" />
-                    ) : (
-                      <Plus className="w-3 h-3" />
-                    )}
-                    Agregar
-                  </Button>
-                </div>
+              <CardContent className="p-3 flex flex-col flex-1">
+                <h3 className="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">{item.title}</h3>
+                <p className="text-[10px] text-muted-foreground mt-auto">{item.year || 'Año desconocido'}</p>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AddMediaDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={onAddSuccess}
+        prefillData={prefillData}
+        defaultType={activeType}
+      />
     </div>
   )
 }

@@ -162,15 +162,16 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
         </div>
 
         {/* Results */}
-        <div className="flex-1 overflow-hidden px-6 pb-6">
+        <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {hasApiSupport ? (
-            <ScrollArea className="h-full max-h-[50vh] pr-4">
+            <div className="h-full pr-1">
               {results.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-3 pb-4">
                   {results.map((result) => (
                     <div
                       key={result.id}
-                      className="flex gap-3 p-3 rounded-lg border border-border bg-background/50 hover:border-primary/50 transition-colors"
+                      onClick={() => handleSelectItem(result)}
+                      className="flex gap-3 p-3 rounded-lg border border-border bg-background/50 hover:border-primary/50 transition-colors cursor-pointer group/item"
                     >
                       {/* Image */}
                       <div className="flex-shrink-0 w-16 h-24 rounded-md overflow-hidden bg-muted">
@@ -178,7 +179,10 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
                           <img
                             src={result.image_url}
                             alt={result.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover/item:scale-105 transition-transform"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://placehold.co/400x600/1e293b/white?text=Sin+Imagen'
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
@@ -189,7 +193,7 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm truncate">{result.title}</h4>
+                        <h4 className="font-semibold text-sm truncate group-hover/item:text-primary transition-colors">{result.title}</h4>
                         
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
                           {result.year && (
@@ -230,14 +234,10 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
                       </div>
 
                       {/* Select button */}
-                      <div className="flex-shrink-0">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSelectItem(result)}
-                          className="glow-primary"
-                        >
+                      <div className="flex-shrink-0 flex items-center">
+                        <div className="h-8 w-8 rounded-full border border-primary/30 flex items-center justify-center group-hover/item:bg-primary group-hover/item:border-primary group-hover/item:text-primary-foreground transition-all">
                           <Plus className="h-4 w-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -254,9 +254,10 @@ export function MediaSearch({ open, onOpenChange, onSelectItem, defaultType = 'a
                   <p>Escribe al menos 2 caracteres</p>
                   <p className="text-sm">para buscar {TYPE_LABELS[selectedType].toLowerCase()}</p>
                 </div>
-              )}
-            </ScrollArea>
-          ) : (
+                )}
+                </div>
+                ) : (
+
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Info className="h-12 w-12 mb-4 opacity-50" />
               <p className="text-center mb-2">

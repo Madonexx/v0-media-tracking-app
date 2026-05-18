@@ -185,6 +185,9 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                 src={item.image_url} 
                 alt={item.title} 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://placehold.co/400x600/1e293b/white?text=Sin+Imagen'
+                }}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1">
@@ -250,26 +253,26 @@ export function MediaCard({ item, onEdit, onDelete, compact = false, readOnly = 
                       {unitLabel && <span className="ml-0.5 opacity-70">{unitLabel}</span>}
                     </div>
                     {!readOnly && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {localProgress > 0 && (
                           <Button 
                             size="icon" 
                             variant="outline" 
-                            className="h-5 w-5 border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                            className="h-6 w-6 border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             onClick={handleDecrement}
                             disabled={updating}
                           >
-                            <Minus className="h-2.5 w-2.5" />
+                            <Minus className="h-3 w-3" />
                           </Button>
                         )}
                         <Button 
                           size="icon" 
                           variant="outline" 
-                          className="h-5 w-5 border-primary/30 text-primary hover:bg-primary hover:text-white"
+                          className="h-6 w-6 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground shadow-sm transition-all"
                           onClick={handleIncrement}
                           disabled={updating}
                         >
-                          <Plus className="h-2.5 w-2.5" />
+                          <Plus className="h-3 w-3" />
                         </Button>
                       </div>
                     )}
