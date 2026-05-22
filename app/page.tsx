@@ -39,25 +39,25 @@ export default function LandingPage() {
   const features = [
     {
       title: 'Tracking Completo',
-      description: 'Lleva el control de tus animes, series, películas, libros y videojuegos en un solo lugar.',
+      description: '¿En qué episodio te quedaste? No vuelvas a perder el hilo de tus historias. Lleva el control de animes, series, películas, libros y videojuegos en un solo lugar.',
       icon: List,
       color: 'text-blue-500'
     },
     {
       title: 'Sistema de Logros',
-      description: 'Gana medallas y desbloquea logros mientras completas tus series y juegos favoritos.',
+      description: 'Gana medallas y desbloquea logros mientras completas tus series y juegos favoritos. Convierte tu hobby en una aventura épica.',
       icon: Trophy,
       color: 'text-yellow-500'
     },
     {
       title: 'Búsqueda Inteligente',
-      description: 'Conéctate con APIs de MyAnimeList, TMDB y Open Library para encontrar todo al instante.',
+      description: 'Conéctate con APIs de MyAnimeList, TMDB y Open Library. Información actualizada de temporadas, capítulos y más al instante.',
       icon: Zap,
       color: 'text-purple-500'
     },
     {
       title: 'Personalización',
-      description: 'Elige qué categorías quieres trackear y personaliza tu perfil a tu gusto.',
+      description: 'Elige qué categorías quieres trackear. ¿Solo anime y juegos? Tú decides qué aparece en tu dashboard personal.',
       icon: Sparkles,
       color: 'text-pink-500'
     }
@@ -88,16 +88,16 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-            MediaQuest es el hub definitivo para coleccionistas de historias. 
-            Gestiona tu biblioteca, desbloquea logros y compite contigo mismo.
+            ¿Alguna vez olvidaste en qué capítulo de ese anime te quedaste? ¿O si terminaste aquel libro el año pasado? 
+            MediaQuest es tu diario digital para no perder nunca el hilo.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" onClick={() => router.push('/signup')} className="glow-primary h-12 px-8 text-lg font-bold group">
               Empezar Gratis
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => document.getElementById('try-it-out')?.scrollIntoView({ behavior: 'smooth' })} className="h-12 px-8 text-lg">
-              Probar Demo
+            <Button size="lg" variant="outline" onClick={() => document.getElementById('why-track')?.scrollIntoView({ behavior: 'smooth' })} className="h-12 px-8 text-lg">
+              Saber más
             </Button>
           </div>
           
@@ -115,8 +115,67 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Why Track Section */}
+      <section id="why-track" className="py-24 bg-card/50">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">
+                Deja de preguntarte <br />
+                <span className="text-primary">"¿En qué parte iba?"</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                A todos nos pasa: empiezas una serie increíble, la dejas por unas semanas y cuando vuelves... ¿era el episodio 12 o el 14? ¿Ya había aparecido ese personaje?
+              </p>
+              <ul className="space-y-4">
+                {[
+                  'Trackeo detallado de temporadas y capítulos.',
+                  'Progreso porcentual en libros y videojuegos.',
+                  'Notas personales para recordar detalles clave.',
+                  'Plataformas de streaming: recuerda dónde lo estabas viendo.'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="bg-primary/20 p-1 rounded-full">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative">
+              <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl border border-border flex items-center justify-center p-8 overflow-hidden shadow-inner">
+                <div className="w-full bg-background rounded-xl border border-border p-4 shadow-2xl space-y-4">
+                  <div className="flex items-center gap-3 border-b border-border pb-3">
+                    <div className="w-10 h-10 rounded bg-muted animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                      <div className="h-3 w-20 bg-muted rounded animate-pulse opacity-50" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
+                      <span>Tu Progreso</span>
+                      <span className="text-primary">Ep. 14 / 24</span>
+                    </div>
+                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                      <div className="h-full w-[58%] bg-primary" />
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <Badge variant="outline" className="text-[10px] uppercase font-bold text-cyan-400 border-cyan-400/30">
+                      Saliendo en Crunchyroll
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Grid */}
-      <section className="py-24 border-y border-border bg-card/30">
+      <section className="py-24 border-y border-border">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Todo lo que necesitas para tu colección</h2>
@@ -141,7 +200,7 @@ export default function LandingPage() {
       </section>
 
       {/* Try it out Section */}
-      <section id="try-it-out" className="py-24 relative overflow-hidden">
+      <section id="try-it-out" className="py-24 relative overflow-hidden bg-card/30">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -186,7 +245,7 @@ export default function LandingPage() {
             <Button size="lg" variant="secondary" onClick={() => router.push('/signup')} className="h-14 px-10 text-lg font-bold">
               Crear mi cuenta gratuita
             </Button>
-            <Link href="https://github.com/matias-codes" target="_blank">
+            <Link href="https://github.com/Madonexx/v0-media-tracking-app" target="_blank">
               <Button size="lg" variant="outline" className="h-14 px-10 text-lg bg-transparent border-primary-foreground/30 hover:bg-primary-foreground/10">
                 <Github className="mr-2 w-5 h-5" />
                 Ver en GitHub
