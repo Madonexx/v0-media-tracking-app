@@ -18,12 +18,16 @@ interface RPGCharacterCardProps {
 }
 
 export function RPGCharacterCard({ profile, stats }: RPGCharacterCardProps) {
-  const xpForNextLevel = Math.pow(profile.level, 2) * 100
-  const xpCurrentLevel = Math.pow(profile.level - 1, 2) * 100
-  const progress = ((profile.xp - xpCurrentLevel) / (xpForNextLevel - xpCurrentLevel)) * 100
+  const level = profile.level || 1
+  const xp = profile.xp || 0
+  const title = profile.title || 'Novato'
+
+  const xpForNextLevel = Math.pow(level, 2) * 100
+  const xpCurrentLevel = Math.pow(level - 1, 2) * 100
+  const progress = Math.max(0, Math.min(100, ((xp - xpCurrentLevel) / (xpForNextLevel - xpCurrentLevel)) * 100))
 
   const getIconForCategory = (cat: string) => {
-    switch (cat) {
+    switch (cat?.toLowerCase()) {
       case 'game': return <Sword className="w-5 h-5 text-red-400" />
       case 'anime': return <Zap className="w-5 h-5 text-yellow-400" />
       case 'book': return <Wand2 className="w-5 h-5 text-purple-400" />
@@ -45,13 +49,13 @@ export function RPGCharacterCard({ profile, stats }: RPGCharacterCardProps) {
                 <img src={profile.avatar_url} alt={profile.username || ''} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center text-4xl">
-                  {profile.username?.[0].toUpperCase() || 'M'}
+                  {profile.username?.[0]?.toUpperCase() || 'M'}
                 </div>
               )}
               <div className="absolute inset-0 border-2 border-white/10 rounded-xl" />
             </div>
             <div className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full bg-primary border-4 border-background flex items-center justify-center font-bold text-lg shadow-lg">
-              {profile.level}
+              {level}
             </div>
           </div>
 
@@ -62,7 +66,7 @@ export function RPGCharacterCard({ profile, stats }: RPGCharacterCardProps) {
                 {profile.username || 'Explorador'}
               </h2>
               <Badge variant="secondary" className="font-mono px-3 py-1 bg-primary/10 text-primary border-primary/20">
-                Lvl. {profile.level} {profile.title}
+                Lvl. {level} {title}
               </Badge>
             </div>
             <p className="text-muted-foreground italic text-sm max-w-md">
@@ -73,12 +77,12 @@ export function RPGCharacterCard({ profile, stats }: RPGCharacterCardProps) {
             <div className="space-y-1.5 pt-2">
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest opacity-70">
                 <span>Experiencia (XP)</span>
-                <span>{profile.xp} / {xpForNextLevel}</span>
+                <span>{xp} / {xpForNextLevel}</span>
               </div>
               <div className="h-3 bg-muted rounded-full overflow-hidden border border-border">
                 <div 
                   className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${isNaN(progress) ? 0 : progress}%` }}
                 />
               </div>
             </div>
@@ -108,7 +112,7 @@ export function RPGCharacterCard({ profile, stats }: RPGCharacterCardProps) {
           <StatBox 
             label="Especialidad" 
             value={stats.topCategory} 
-            icon={getIconForCategory(stats.topCategory.toLowerCase())} 
+            icon={getIconForCategory(stats.topCategory)} 
             description="Clase de Media"
           />
         </div>

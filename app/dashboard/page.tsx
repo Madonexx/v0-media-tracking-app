@@ -187,6 +187,18 @@ export default function Home() {
     )
   }
 
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-8 bg-card border-2 border-primary/30 rounded-2xl max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Inicializando Perfil...</h2>
+          <p className="text-muted-foreground mb-6">Estamos preparando tu tarjeta de aventurero. Si esto tarda mucho, intenta recargar.</p>
+          <Button onClick={handleRefresh} className="glow-primary">Reintentar</Button>
+        </div>
+      </div>
+    )
+  }
+
   const getStats = () => {
     const completed = items.filter(i => i.user_progress === 'completado').length
     const categoriesCount = items.reduce((acc, item) => {
