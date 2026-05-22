@@ -28,6 +28,7 @@ export default function Home() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   // Dashboard edit state
   const [editItem, setEditItem] = useState<MediaItem | null>(null)
@@ -38,6 +39,8 @@ export default function Home() {
 
   const fetchData = useCallback(async (userId: string) => {
     try {
+      setLoading(true)
+      setError(null)
       const [itemsRes, achievementsRes, userAchievementsRes, profileRes] = await Promise.all([
         supabase.from('media_items').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
         supabase.from('achievements').select('*'),
@@ -45,8 +48,44 @@ export default function Home() {
         supabase.from('profiles').select('*').eq('id', userId).single()
       ])
       
+      if (itemsRes.error) {
+        console.error('Error fetching items:', itemsRes.error)
+        setError(`Error al cargar items: ${itemsRes.error.message}`)
+      }
+      if (achievementsRes.error) console.error('Error fetching achievements:', achievementsRes.error)
+      
+      let currentProfile = profileRes.data
+
       if (profileRes.error) {
         console.warn('Profile fetch error:', profileRes.error.message)
+        
+        // If profile is missing (PGRST116), try to create it
+        if (profileRes.error.code === 'PGRST116') {
+          console.log('Profile not found for user, creating one...')
+          const { data: authUser } = await supabase.auth.getUser()
+          
+          const newProfileData = { 
+            id: userId, 
+            username: authUser.user?.user_metadata?.username || authUser.user?.email?.split('@')[0] || 'Aventurero',
+            share_slug: Math.random().toString(36).substring(2, 12)
+          }
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([newProfileData])
+            .select()
+            .single()
+          
+          if (newProfile) {
+            console.log('Profile created successfully')
+            currentProfile = newProfile
+          } else if (createError) {
+            console.error('Failed to create profile:', createError.message)
+            setError(`No pudimos crear tu perfil: ${createError.message}`)
+          }
+        } else {
+          setError(`Error al cargar perfil: ${profileRes.error.message}`)
+        }
       }
 
       const mappedItems = (itemsRes.data || []).map((item: any) => ({
@@ -58,9 +97,10 @@ export default function Home() {
       setItems(mappedItems)
       setAchievements(achievementsRes.data || [])
       setUserAchievements(userAchievementsRes.data || [])
-      setProfile(profileRes.data || null)
-    } catch (err) {
+      setProfile(currentProfile || null)
+    } catch (err: any) {
       console.error('Error fetching dashboard data:', err)
+      setError(err.message || 'Ocurrió un error inesperado al cargar tus datos.')
     } finally {
       setLoading(false)
     }
@@ -207,11 +247,22 @@ export default function Home() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 bg-card border-2 border-primary/30 rounded-2xl max-w-md">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center p-8 bg-card border-2 border-primary/30 rounded-2xl max-w-md w-full">
           <h2 className="text-2xl font-bold mb-4">Inicializando Perfil...</h2>
-          <p className="text-muted-foreground mb-6">Estamos preparando tu tarjeta de aventurero. Si esto tarda mucho, intenta recargar.</p>
-          <Button onClick={handleRefresh} className="glow-primary">Reintentar</Button>
+          <p className="text-muted-foreground mb-6">
+            Estamos preparando tu tarjeta de aventurero. Si esto tarda mucho, intenta recargar.
+          </p>
+          
+          {error && (
+            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm font-medium">
+              {error}
+            </div>
+          )}
+          
+          <Button onClick={handleRefresh} className="glow-primary w-full sm:w-auto">
+            Reintentar
+          </Button>
         </div>
       </div>
     )
