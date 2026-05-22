@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { MediaType, TYPE_LABELS } from '@/lib/types'
 import { Home, Tv, Film, BookOpen, Gamepad2, Clapperboard, Trophy, Settings, LogOut, User, Sparkles } from 'lucide-react'
@@ -26,9 +27,25 @@ export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSe
   const router = useRouter()
   const supabase = createClient()
 
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/login')
+    router.push('/')
     router.refresh()
   }
 
@@ -54,7 +71,7 @@ export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSe
       <div className="container mx-auto px-4">
         <div className="flex items-center h-16 gap-2">
           <button 
-            onClick={() => onTabChange('dashboard')}
+            onClick={() => user ? onTabChange('dashboard') : router.push('/')}
             className="flex items-center gap-2 mr-6 hover:opacity-80 transition-opacity cursor-pointer group"
           >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center group-hover:glow-primary transition-all">
@@ -66,7 +83,7 @@ export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSe
           </button>
           
           <div className="flex items-center gap-1 overflow-x-auto pb-px flex-1">
-            {navItems.map((item) => (
+            {user && navItems.map((item) => (
               <Button
                 key={item.id}
                 variant="ghost"
@@ -83,30 +100,42 @@ export function Navigation({ activeTab, onTabChange, enabledCategories, onOpenSe
                 <span className="hidden md:inline">{item.label}</span>
               </Button>
             ))}
+            {!user && !loading && (
+              <div className="flex items-center gap-4 ml-auto">
+                <Button variant="ghost" onClick={() => router.push('/login')}>
+                  Iniciar Sesión
+                </Button>
+                <Button onClick={() => router.push('/signup')} className="glow-primary">
+                  Registrarse
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="ml-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onOpenSettings}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Ajustes</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Cerrar Sesión</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {user && (
+            <div className="ml-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onOpenSettings}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Ajustes</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar Sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
       </div>
     </nav>
