@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
+import { RPGCharacterCard } from '@/components/rpg-character-card'
+
 type TabType = 'dashboard' | 'achievements' | MediaType
 
 export default function SharedProfilePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -101,19 +103,46 @@ export default function SharedProfilePage({ params }: { params: Promise<{ slug: 
   }
 
   const navItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: Globe },
+    { id: 'dashboard' as const, label: 'Resumen', icon: Globe },
     ...(profile?.enabled_categories || []).map(cat => ({
       id: cat,
       label: TYPE_LABELS[cat],
-      icon: Gamepad2 // Placeholder icon
+      icon: Gamepad2
     })),
-    { id: 'achievements' as const, label: 'Logros', icon: Globe }
+    { id: 'achievements' as const, label: 'Logros', icon: Trophy }
   ]
+
+  const getStats = () => {
+    const completed = items.filter(i => i.user_progress === 'completado').length
+    const categoriesCount = items.reduce((acc, item) => {
+      acc[item.type] = (acc[item.type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    const topCat = Object.entries(categoriesCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Media'
+
+    return {
+      totalItems: items.length,
+      completedItems: completed,
+      achievementsCount: userAchievements.length,
+      topCategory: TYPE_LABELS[topCat as MediaType] || 'N/A'
+    }
+  }
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard items={items} achievements={achievements} userAchievements={userAchievements} />
+        return (
+          <div className="space-y-8">
+            <RPGCharacterCard profile={profile!} stats={getStats()} />
+            <Dashboard 
+              items={items} 
+              achievements={achievements} 
+              userAchievements={userAchievements} 
+              readOnly 
+            />
+          </div>
+        )
       case 'achievements':
         return <AchievementsList achievements={achievements} userAchievements={userAchievements} />
       default:
@@ -122,39 +151,34 @@ export default function SharedProfilePage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20">
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center h-16 gap-2">
-            <div className="flex items-center gap-2 mr-6">
+            <Link href="/" className="flex items-center gap-2 mr-6 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                 <Gamepad2 className="w-5 h-5 text-primary-foreground" />
               </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-sm bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Biblioteca de {profile?.username || 'Usuario'}
-                </span>
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Globe className="w-2 h-2" /> Perfil Público
-                </span>
-              </div>
-            </div>
+              <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block">
+                MediaQuest
+              </span>
+            </Link>
             
             <div className="flex items-center gap-1 overflow-x-auto pb-px flex-1">
-              {['dashboard', 'achievements', ...(profile?.enabled_categories || [])].map((tab) => (
+              {navItems.map((item) => (
                 <Button
-                  key={tab}
+                  key={item.id}
                   variant="ghost"
                   size="sm"
-                  onClick={() => setActiveTab(tab as TabType)}
+                  onClick={() => setActiveTab(item.id as TabType)}
                   className={cn(
                     'flex items-center gap-2 whitespace-nowrap transition-all',
-                    activeTab === tab 
+                    activeTab === item.id 
                       ? 'bg-primary/20 text-primary border-b-2 border-primary rounded-b-none' 
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <span className="capitalize">{tab === 'dashboard' ? 'Dashboard' : tab === 'achievements' ? 'Logros' : TYPE_LABELS[tab as MediaType]}</span>
+                  <span className="capitalize">{item.label}</span>
                 </Button>
               ))}
             </div>

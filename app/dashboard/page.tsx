@@ -13,6 +13,8 @@ import { SettingsDialog } from '@/components/settings-dialog'
 import { AddMediaDialog } from '@/components/add-media-dialog'
 import { Spinner } from '@/components/ui/spinner'
 
+import { RPGCharacterCard } from '@/components/rpg-character-card'
+
 type TabType = 'dashboard' | 'achievements' | 'catalog' | MediaType
 
 export default function Home() {
@@ -61,6 +63,8 @@ export default function Home() {
     const currentAchievements = achievements
     const currentUnlocked = new Set(userAchievements.map(ua => ua.achievement_id))
     
+    let achievementsAdded = false
+    
     for (const achievement of currentAchievements) {
       if (currentUnlocked.has(achievement.id)) continue
       
@@ -92,15 +96,13 @@ export default function Home() {
             i.title.toLowerCase().includes(franchiseName) && 
             i.user_progress === 'completado'
           )
-          // For franchises, we might want a specific count or just "all found"
-          // Let's assume the condition has a 'count' or we just check if it's > 0
           const requiredCount = (condition.count as number) || 1
           shouldUnlock = franchiseItems.length >= requiredCount
           break
         case 'genre':
           const genreName = (condition.name as string).toLowerCase()
           const genreItems = currentItems.filter(i => 
-            i.notes?.toLowerCase().includes(genreName) && // Genres are often stored in notes/synopsis in this app
+            i.notes?.toLowerCase().includes(genreName) && 
             i.user_progress === 'completado'
           )
           shouldUnlock = genreItems.length >= (condition.count as number)
@@ -115,11 +117,20 @@ export default function Home() {
           achievement_id: achievement.id,
           user_id: user.id 
         })
+        
+        // Award XP for achievement
+        await supabase.rpc('add_xp', { user_uuid: user.id, xp_to_add: achievement.points || 50 })
+        achievementsAdded = true
       }
     }
     
-    const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
-    if (data) setUserAchievements(data)
+    if (achievementsAdded) {
+      const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
+      if (data) setUserAchievements(data)
+      // Refresh profile to see new XP/Level
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      if (profileData) setProfile(profileData)
+    }
   }, [items, achievements, userAchievements, supabase, user])
 
   useEffect(() => {
@@ -176,17 +187,37 @@ export default function Home() {
     )
   }
 
+  const getStats = () => {
+    const completed = items.filter(i => i.user_progress === 'completado').length
+    const categoriesCount = items.reduce((acc, item) => {
+      acc[item.type] = (acc[item.type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    const topCat = Object.entries(categoriesCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Media'
+
+    return {
+      totalItems: items.length,
+      completedItems: completed,
+      achievementsCount: userAchievements.length,
+      topCategory: TYPE_LABELS[topCat as MediaType] || 'N/A'
+    }
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <Dashboard 
-            items={items} 
-            achievements={achievements} 
-            userAchievements={userAchievements}
-            onStatClick={handleStatClick}
-            onEditItem={handleEditItem}
-          />
+          <div className="space-y-8">
+            <RPGCharacterCard profile={profile!} stats={getStats()} />
+            <Dashboard 
+              items={items} 
+              achievements={achievements} 
+              userAchievements={userAchievements}
+              onStatClick={handleStatClick}
+              onEditItem={handleEditItem}
+            />
+          </div>
         )
       case 'achievements':
         return (
