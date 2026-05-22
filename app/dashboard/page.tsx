@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { MediaItem, Achievement, UserAchievement, MediaType, Profile, UserProgress } from '@/lib/types'
+import { MediaItem, Achievement, UserAchievement, MediaType, Profile, UserProgress, TYPE_LABELS } from '@/lib/types'
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
 import { MediaList } from '@/components/media-list'
@@ -12,6 +12,7 @@ import { AchievementsList } from '@/components/achievements-list'
 import { SettingsDialog } from '@/components/settings-dialog'
 import { AddMediaDialog } from '@/components/add-media-dialog'
 import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
 
 import { RPGCharacterCard } from '@/components/rpg-character-card'
 
@@ -36,100 +37,117 @@ export default function Home() {
   const router = useRouter()
 
   const fetchData = useCallback(async (userId: string) => {
-    const [itemsRes, achievementsRes, userAchievementsRes, profileRes] = await Promise.all([
-      supabase.from('media_items').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
-      supabase.from('achievements').select('*'),
-      supabase.from('user_achievements').select('*').eq('user_id', userId),
-      supabase.from('profiles').select('*').eq('id', userId).single()
-    ])
-    
-    const mappedItems = (itemsRes.data || []).map((item: any) => ({
-      ...item,
-      content_status: item.content_status || item.status || 'no_empezado',
-      user_progress: item.user_progress || (item.is_watching ? 'viendo' : (item.status === 'terminado' ? 'completado' : 'pendiente'))
-    }))
-    
-    setItems(mappedItems)
-    setAchievements(achievementsRes.data || [])
-    setUserAchievements(userAchievementsRes.data || [])
-    setProfile(profileRes.data)
-    setLoading(false)
+    try {
+      const [itemsRes, achievementsRes, userAchievementsRes, profileRes] = await Promise.all([
+        supabase.from('media_items').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
+        supabase.from('achievements').select('*'),
+        supabase.from('user_achievements').select('*').eq('user_id', userId),
+        supabase.from('profiles').select('*').eq('id', userId).single()
+      ])
+      
+      if (profileRes.error) {
+        console.warn('Profile fetch error:', profileRes.error.message)
+      }
+
+      const mappedItems = (itemsRes.data || []).map((item: any) => ({
+        ...item,
+        content_status: item.content_status || item.status || 'no_empezado',
+        user_progress: item.user_progress || (item.is_watching ? 'viendo' : (item.status === 'terminado' ? 'completado' : 'pendiente'))
+      }))
+      
+      setItems(mappedItems)
+      setAchievements(achievementsRes.data || [])
+      setUserAchievements(userAchievementsRes.data || [])
+      setProfile(profileRes.data || null)
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [supabase])
 
   const checkAndUnlockAchievements = useCallback(async () => {
-    if (!user) return
+    if (!user?.id) return
     
-    const currentItems = items
-    const currentAchievements = achievements
-    const currentUnlocked = new Set(userAchievements.map(ua => ua.achievement_id))
-    
-    let achievementsAdded = false
-    
-    for (const achievement of currentAchievements) {
-      if (currentUnlocked.has(achievement.id)) continue
+    try {
+      const currentItems = items
+      const currentAchievements = achievements
+      const currentUnlocked = new Set(userAchievements.map(ua => ua.achievement_id))
       
-      let shouldUnlock = false
-      const condition = achievement.condition_value as Record<string, unknown>
+      let achievementsAdded = false
       
-      switch (achievement.condition_type) {
-        case 'total_items':
-          shouldUnlock = currentItems.length >= (condition.count as number)
-          break
-        case 'completed_by_type':
-          const typeFilter = condition.type as string | undefined
-          const completedCount = currentItems.filter(i => 
-            i.user_progress === 'completado' && 
-            (!typeFilter || i.type === typeFilter)
-          ).length
-          shouldUnlock = completedCount >= (condition.count as number)
-          break
-        case 'perfect_score':
-          const perfectCount = currentItems.filter(i => i.score === 10).length
-          shouldUnlock = perfectCount >= (condition.count as number)
-          break
-        case 'count_up_to_date':
-          shouldUnlock = currentItems.filter(i => i.is_up_to_date).length >= (condition.count as number)
-          break
-        case 'franchise':
-          const franchiseName = (condition.name as string).toLowerCase()
-          const franchiseItems = currentItems.filter(i => 
-            i.title.toLowerCase().includes(franchiseName) && 
-            i.user_progress === 'completado'
-          )
-          const requiredCount = (condition.count as number) || 1
-          shouldUnlock = franchiseItems.length >= requiredCount
-          break
-        case 'genre':
-          const genreName = (condition.name as string).toLowerCase()
-          const genreItems = currentItems.filter(i => 
-            i.notes?.toLowerCase().includes(genreName) && 
-            i.user_progress === 'completado'
-          )
-          shouldUnlock = genreItems.length >= (condition.count as number)
-          break
-        case 'platinum_count':
-          shouldUnlock = currentItems.filter(i => i.is_platinum).length >= (condition.count as number)
-          break
-      }
-      
-      if (shouldUnlock) {
-        await supabase.from('user_achievements').insert({ 
-          achievement_id: achievement.id,
-          user_id: user.id 
-        })
+      for (const achievement of currentAchievements) {
+        if (!achievement?.id || currentUnlocked.has(achievement.id)) continue
         
-        // Award XP for achievement
-        await supabase.rpc('add_xp', { user_uuid: user.id, xp_to_add: achievement.points || 50 })
-        achievementsAdded = true
+        let shouldUnlock = false
+        const condition = (achievement.condition_value as Record<string, unknown>) || {}
+        
+        switch (achievement.condition_type) {
+          case 'total_items':
+            shouldUnlock = currentItems.length >= (Number(condition.count) || 0)
+            break
+          case 'completed_by_type':
+            const typeFilter = condition.type as string | undefined
+            const completedCount = currentItems.filter(i => 
+              i.user_progress === 'completado' && 
+              (!typeFilter || i.type === typeFilter)
+            ).length
+            shouldUnlock = completedCount >= (Number(condition.count) || 0)
+            break
+          case 'perfect_score':
+            const perfectCount = currentItems.filter(i => i.score === 10).length
+            shouldUnlock = perfectCount >= (Number(condition.count) || 0)
+            break
+          case 'count_up_to_date':
+            shouldUnlock = currentItems.filter(i => i.is_up_to_date).length >= (Number(condition.count) || 0)
+            break
+          case 'franchise':
+            const franchiseName = String(condition.name || '').toLowerCase()
+            const franchiseItems = currentItems.filter(i => 
+              i.title.toLowerCase().includes(franchiseName) && 
+              i.user_progress === 'completado'
+            )
+            const requiredCount = (Number(condition.count) || 1)
+            shouldUnlock = franchiseItems.length >= requiredCount
+            break
+          case 'genre':
+            const genreName = String(condition.name || '').toLowerCase()
+            const genreItems = currentItems.filter(i => 
+              i.notes?.toLowerCase().includes(genreName) && 
+              i.user_progress === 'completado'
+            )
+            shouldUnlock = genreItems.length >= (Number(condition.count) || 0)
+            break
+          case 'platinum_count':
+            shouldUnlock = currentItems.filter(i => i.is_platinum).length >= (Number(condition.count) || 0)
+            break
+        }
+        
+        if (shouldUnlock) {
+          await supabase.from('user_achievements').insert({ 
+            achievement_id: achievement.id,
+            user_id: user.id 
+          })
+          
+          // Award XP for achievement - Using a safer approach
+          try {
+            await supabase.rpc('add_xp', { user_uuid: user.id, xp_to_add: Number(achievement.points) || 50 })
+          } catch (rpcErr) {
+            console.warn('RPC add_xp failed (might not be defined yet):', rpcErr)
+          }
+          achievementsAdded = true
+        }
       }
-    }
-    
-    if (achievementsAdded) {
-      const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
-      if (data) setUserAchievements(data)
-      // Refresh profile to see new XP/Level
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-      if (profileData) setProfile(profileData)
+      
+      if (achievementsAdded) {
+        const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
+        if (data) setUserAchievements(data)
+        // Refresh profile to see new XP/Level
+        const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+        if (profileData) setProfile(profileData)
+      }
+    } catch (err) {
+      console.error('Error in achievement checker:', err)
     }
   }, [items, achievements, userAchievements, supabase, user])
 
