@@ -12,7 +12,10 @@ import { AchievementsList } from '@/components/achievements-list'
 import { SettingsDialog } from '@/components/settings-dialog'
 import { AddMediaDialog } from '@/components/add-media-dialog'
 import { Spinner } from '@/components/ui/spinner'
+<<<<<<< HEAD
 import { Button } from '@/components/ui/button'
+=======
+>>>>>>> parent of 0425fb6 (created public profile and rpg character card)
 
 type TabType = 'dashboard' | 'achievements' | 'catalog' | MediaType
 
@@ -251,6 +254,9 @@ export default function Home() {
     
     const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
     if (data) setUserAchievements(data)
+<<<<<<< HEAD
+>>>>>>> parent of 0425fb6 (created public profile and rpg character card)
+=======
 >>>>>>> parent of 0425fb6 (created public profile and rpg character card)
   }, [items, achievements, userAchievements, supabase, user])
 
@@ -309,6 +315,7 @@ export default function Home() {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -349,6 +356,8 @@ export default function Home() {
     }
   }
 
+=======
+>>>>>>> parent of 0425fb6 (created public profile and rpg character card)
 =======
 >>>>>>> parent of 0425fb6 (created public profile and rpg character card)
   const renderContent = () => {
