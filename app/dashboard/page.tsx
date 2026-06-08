@@ -14,8 +14,6 @@ import { AddMediaDialog } from '@/components/add-media-dialog'
 import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 
-import { RPGCharacterCard } from '@/components/rpg-character-card'
-
 type TabType = 'dashboard' | 'achievements' | 'catalog' | MediaType
 
 export default function Home() {
@@ -109,13 +107,23 @@ export default function Home() {
   const checkAndUnlockAchievements = useCallback(async () => {
     if (!user?.id) return
     
+<<<<<<< HEAD
     try {
       const currentItems = items
       const currentAchievements = achievements
       const currentUnlocked = new Set(userAchievements.map(ua => ua.achievement_id))
+=======
+    const currentItems = items
+    const currentAchievements = achievements
+    const currentUnlocked = new Set(userAchievements.map(ua => ua.achievement_id))
+    
+    for (const achievement of currentAchievements) {
+      if (currentUnlocked.has(achievement.id)) continue
+>>>>>>> parent of 0425fb6 (created public profile and rpg character card)
       
       let achievementsAdded = false
       
+<<<<<<< HEAD
       for (const achievement of currentAchievements) {
         if (!achievement?.id || currentUnlocked.has(achievement.id)) continue
         
@@ -189,6 +197,61 @@ export default function Home() {
     } catch (err) {
       console.error('Error in achievement checker:', err)
     }
+=======
+      switch (achievement.condition_type) {
+        case 'total_items':
+          shouldUnlock = currentItems.length >= (condition.count as number)
+          break
+        case 'completed_by_type':
+          const typeFilter = condition.type as string | undefined
+          const completedCount = currentItems.filter(i => 
+            i.user_progress === 'completado' && 
+            (!typeFilter || i.type === typeFilter)
+          ).length
+          shouldUnlock = completedCount >= (condition.count as number)
+          break
+        case 'perfect_score':
+          const perfectCount = currentItems.filter(i => i.score === 10).length
+          shouldUnlock = perfectCount >= (condition.count as number)
+          break
+        case 'count_up_to_date':
+          shouldUnlock = currentItems.filter(i => i.is_up_to_date).length >= (condition.count as number)
+          break
+        case 'franchise':
+          const franchiseName = (condition.name as string).toLowerCase()
+          const franchiseItems = currentItems.filter(i => 
+            i.title.toLowerCase().includes(franchiseName) && 
+            i.user_progress === 'completado'
+          )
+          // For franchises, we might want a specific count or just "all found"
+          // Let's assume the condition has a 'count' or we just check if it's > 0
+          const requiredCount = (condition.count as number) || 1
+          shouldUnlock = franchiseItems.length >= requiredCount
+          break
+        case 'genre':
+          const genreName = (condition.name as string).toLowerCase()
+          const genreItems = currentItems.filter(i => 
+            i.notes?.toLowerCase().includes(genreName) && // Genres are often stored in notes/synopsis in this app
+            i.user_progress === 'completado'
+          )
+          shouldUnlock = genreItems.length >= (condition.count as number)
+          break
+        case 'platinum_count':
+          shouldUnlock = currentItems.filter(i => i.is_platinum).length >= (condition.count as number)
+          break
+      }
+      
+      if (shouldUnlock) {
+        await supabase.from('user_achievements').insert({ 
+          achievement_id: achievement.id,
+          user_id: user.id 
+        })
+      }
+    }
+    
+    const { data } = await supabase.from('user_achievements').select('*').eq('user_id', user.id)
+    if (data) setUserAchievements(data)
+>>>>>>> parent of 0425fb6 (created public profile and rpg character card)
   }, [items, achievements, userAchievements, supabase, user])
 
   useEffect(() => {
@@ -245,6 +308,7 @@ export default function Home() {
     )
   }
 
+<<<<<<< HEAD
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -285,20 +349,19 @@ export default function Home() {
     }
   }
 
+=======
+>>>>>>> parent of 0425fb6 (created public profile and rpg character card)
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <div className="space-y-8">
-            <RPGCharacterCard profile={profile!} stats={getStats()} />
-            <Dashboard 
-              items={items} 
-              achievements={achievements} 
-              userAchievements={userAchievements}
-              onStatClick={handleStatClick}
-              onEditItem={handleEditItem}
-            />
-          </div>
+          <Dashboard 
+            items={items} 
+            achievements={achievements} 
+            userAchievements={userAchievements}
+            onStatClick={handleStatClick}
+            onEditItem={handleEditItem}
+          />
         )
       case 'achievements':
         return (

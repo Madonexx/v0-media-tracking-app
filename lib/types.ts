@@ -12,11 +12,6 @@ export interface Profile {
   enabled_categories: MediaType[]
   is_public: boolean
   share_slug: string | null
-  xp: number
-  level: number
-  title: string
-  avatar_url: string | null
-  bio: string | null
   created_at: string
   updated_at: string
 }
